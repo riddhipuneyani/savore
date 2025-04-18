@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>admin</title>
+</head>
+<body>
+    <h1>Our admin</h1>
+    <div id="admin"></div>
+
+    <script>
+        // Fetch data from the backend API
+        fetch('http://localhost:3000/api/admin')
+            .then(response => response.json())
+            .then(data => {
+                let adminHtml = '';
+                data.forEach(item => {
+                    adminHtml += `<p>${item[0]} - ${item[1]}</p>`;
+                });
+                document.getElementById('admin').innerHTML =adminHtml;
+            })
+            .catch(err => {
+                console.error('Error fetching data:', err);
+            });
+    </script>
+</body>
+</html>
