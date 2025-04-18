@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Savoré - Login</title>
+
+   <!-- font awesome cdn link  -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+
+   <!-- custom css file link  -->
+   <link rel="stylesheet" href="css/style.css">
+
+   
+</head>
+<body>
+   
+<!-- Loader -->
+<div class="loader">
+   <img src="images/loader.gif" alt="Loading...">
+</div>
+
+<header class="header">
+   <section class="flex">
+      <a href="home.html" class="logo">Savoré</a>
+      <nav class="navbar">
+         <a href="home.html">home</a>
+         <a href="about.html">about</a>
+         <a href="menu.html">menu</a>
+         <a href="contact.html">contact</a>
+      </nav>
+
+      <div class="icons">
+         <a href="search.html"><i class="fas fa-search"></i></a>
+         <a href="cart.html"><i class="fas fa-shopping-cart"></i><span id="cart-count">(0)</span></a>
+         <div id="user-btn" class="fas fa-user"></div>
+         <div id="menu-btn" class="fas fa-bars"></div>
+      </div>
+
+      <div class="profile">
+         <div id="guest-view">
+            <p class="account">Please <a href="login.html">login</a> to view profile</p>
+         </div>
+       
+         <div id="user-view" style="display: none;">
+            <p class="name" id="username"></p>
+            <div class="flex">
+               <a href="profile.html" class="btn">Profile</a>
+               <button id="logout-btn" class="delete-btn">Logout</button>
+            </div>
+         </div>
+      </div>
+   </section>
+</header>
+
+<section class="form-container">
+   <form id="login-form">
+      <h3>login now</h3>
+      <input type="email" required maxlength="50" id="email" placeholder="enter your email" class="box" oninput="this.value = this.value.replace(/\s/g, '')">
+      <input type="password" required maxlength="20" id="password" placeholder="enter your password" class="box" oninput="this.value = this.value.replace(/\s/g, '')">
+      <input type="submit" value="login now" class="btn">
+      <p>don't have an account? <a href="register.html">register now</a></p>
+   </form>
+</section>
+
+
+<footer class="footer">
+
+   <section class="box-container">
+
+      <div class="box">
+         <img src="images/email-icon.png" alt="">
+         <h3>our email</h3>
+         <a href="mailto:riddhi.puneyani@gmail.com">riddhi.puneyani@gmail.com</a>
+         <a href="mailto:riyanoushad2000@gmail.com">riyanoushad2000@gmail.com</a>
+         <a href="mailto:yaminiprabhaclg@gmail.com">yaminiprabhaclg@gmail.com</a>
+      </div>
+
+      <div class="box">
+         <img src="images/clock-icon.png" alt="">
+         <h3>opening hours</h3>
+         <p>00:07am to 00:10pm </p>
+      </div>
+
+      <div class="box">
+         <img src="images/map-icon.png" alt="">
+         <h3>our address</h3>
+         <a href="https://maps.app.goo.gl/cmz35vHzwXUNB4Gt5">Manipal,India - 576104</a>
+      </div>
+
+      <div class="box">
+         <img src="images/phone-icon.png" alt="">
+         <h3>our number</h3>
+         <a href="tel:+919972761453">+91-99727-61453</a>
+         <a href="tel:+919497641978">+91-94976-41978</a>
+         <a href="tel:+917032033839">+91-7032033839</a>
+      </div>
+
+   </section>
+
+   
+
+</footer>
+
+<script src="js/script.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check login status when page loads
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = localStorage.getItem('token');
+    
+    const guestView = document.getElementById('guest-view');
+    const userView = document.getElementById('user-view');
+    const usernameSpan = document.getElementById('username');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    if (user && token) {
+        // User is logged in
+        guestView.style.display = 'none';
+        userView.style.display = 'flex';
+        usernameSpan.textContent = user.name;
+        
+        // Add logout functionality
+        logoutBtn.addEventListener('click', function() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        });
+    } else {
+        // User is not logged in
+        guestView.style.display = 'flex';
+        userView.style.display = 'none';
+    }
+});
+</script>
+
+</body>
+</html>
