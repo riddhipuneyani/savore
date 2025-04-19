@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>my profile</title>
+   <link rel="icon" type="image/png" href="images/savore_black.png">
+   <!-- font awesome cdn link  -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+
+   <!-- custom css file link  -->
+   <link rel="stylesheet" href="css/style.css">
+
+   <style>
+      .user-details {
+         max-width: 600px;
+         margin: 2rem auto;
+         padding: 2rem;
+      }
+
+      .user {
+         text-align: center;
+         background: #fff;
+         border-radius: 8px;
+         padding: 2rem;
+         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      .user img {
+         width: 150px;
+         height: 150px;
+         margin-bottom: 1rem;
+      }
+
+      .user p {
+         margin: 1rem 0;
+         font-size: 1.1rem;
+         color: #666;
+      }
+
+      .user p i {
+         color: #ff6b6b;
+         margin-right: 1rem;
+      }
+
+      .user .address {
+         margin: 1.5rem 0;
+         line-height: 1.5;
+      }
+
+      .user .btn {
+         display: inline-block;
+         margin: 0.5rem;
+         padding: 0.8rem 2rem;
+         background: #ffd700;
+         color: #333;
+         border: none;
+         border-radius: 4px;
+         cursor: pointer;
+         font-size: 1rem;
+         text-decoration: none;
+         transition: all 0.3s ease;
+      }
+
+      .user .btn:hover {
+         background: #ffc800;
+         transform: translateY(-2px);
+      }
+
+      .heading {
+         text-align: center;
+         margin: 2rem 0;
+      }
+
+      .heading h3 {
+         font-size: 2rem;
+         color: #333;
+         margin-bottom: 0.5rem;
+      }
+
+      .heading p a {
+         color: #ff6b6b;
+         text-decoration: none;
+      }
+
+      .heading p span {
+         color: #666;
+      }
+
+      #loading-spinner {
+         text-align: center;
+         margin: 2rem 0;
+         display: none;
+      }
+
+      .error-message {
+         color: #dc3545;
+         text-align: center;
+         margin: 1rem 0;
+         display: none;
+      }
+   </style>
+</head>
+<body>
+   
+<header class="header">
+   <section class="flex">
+      <a href="#">
+         <img src="images/savore_yellow.png" alt="Savore Logo" class="logo">
+      </a>
+
+      <nav class="navbar">
+         <a href="home.html">home</a>
+         <a href="about.html">about</a>
+         <a href="menu.html">menu</a>
+         <a href="orders.html">orders</a>
+         <a href="contact.html">contact</a>
+      </nav>
+
+      <div class="icons">
+         <a href="search.html"><i class="fas fa-search"></i></a>
+         <a href="cart.html"><i class="fas fa-shopping-cart"></i><span>(0)</span></a>
+         <div id="user-btn" class="fas fa-user"></div>
+         <div id="menu-btn" class="fas fa-bars"></div>
+      </div>
+
+      <div class="profile">
+         <p class="name" id="username">Loading...</p>
+         <div class="flex">
+            <a href="profile.html" class="btn">profile</a>
+            <a href="#" class="delete-btn" id="logout-btn">logout</a>
+         </div>
+         <p class="account"><a href="login.html">login</a> or <a href="register.html">register</a></p>
+      </div>
+   </section>
+</header>
+
+<div class="heading">
+   <h3>my profile</h3>
+   <p><a href="home.html">home </a> <span> / profile</span></p>
+</div>
+
+<div id="loading-spinner">Loading...</div>
+<div class="error-message" id="error-message"></div>
+
+<section class="user-details">
+   <div class="user">
+      <img src="images/user-icon.png" alt="">
+      <p><i class="fas fa-user"></i> <span id="profile-name">Loading...</span></p>
+      <p><i class="fas fa-phone"></i> <span id="profile-phone">Loading...</span></p>
+      <p><i class="fas fa-envelope"></i> <span id="profile-email">Loading...</span></p>
+      <p class="address"><i class="fas fa-map-marker-alt"></i> <span id="profile-address">Loading...</span></p>
+      <a href="update_profile.html" class="btn">update profile</a>
+      <a href="update_address.html" class="btn">update address</a>
+   </div>
+</section>
+
+<script src="js/script.js"></script>
+<script>
+   document.addEventListener('DOMContentLoaded', async function() {
+      const loadingSpinner = document.getElementById('loading-spinner');
+      const errorMessage = document.getElementById('error-message');
+      
+      try {
+         // Check if user is logged in
+         const token = localStorage.getItem('token');
+         const user = JSON.parse(localStorage.getItem('user'));
+         console.log('Current token:', token);
+         console.log('Current user:', user);
+
+         if (!token) {
+            console.log('No token found, redirecting to login');
+            window.location.href = 'login.html';
+            return;
+         }
+
+         // Show loading spinner
+         loadingSpinner.style.display = 'block';
+         errorMessage.style.display = 'none';
+
+         // Fetch user profile data from backend
+         console.log('Fetching profile with token:', token);
+         const response = await fetch('http://localhost:3000/api/auth/profile', {
+            headers: {
+               'Authorization': `Bearer ${token}`
+            }
+         });
+
+         console.log('Profile response status:', response.status);
+         if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Profile fetch error:', errorData);
+            throw new Error(errorData.error || 'Failed to fetch profile data');
+         }
+
+         const profileData = await response.json();
+         console.log('Profile data:', profileData);
+
+         // Update profile information
+         document.getElementById('profile-name').textContent = profileData.name;
+         document.getElementById('profile-phone').textContent = profileData.phone_number;
+         document.getElementById('profile-email').textContent = profileData.email;
+         document.getElementById('profile-address').textContent = profileData.address;
+         
+         // Update header username
+         document.getElementById('username').textContent = profileData.name;
+
+      } catch (error) {
+         console.error('Error fetching profile:', error);
+         errorMessage.textContent = 'Failed to load profile data. Please try again.';
+         errorMessage.style.display = 'block';
+      } finally {
+         loadingSpinner.style.display = 'none';
+      }
+   });
+</script>
+
+<footer class="footer">
+
+   <section class="box-container">
+
+      <div class="box">
+         <img src="images/email-icon.png" alt="">
+         <h3>our email</h3>
+         <a href="mailto:riddhi.puneyani@gmail.com">riddhi.puneyani@gmail.com</a>
+         <a href="mailto:riyanoushad2000@gmail.com">riyanoushad2000@gmail.com</a>
+         <a href="mailto:yaminiprabhaclg@gmail.com">yaminiprabhaclg@gmail.com</a>
+      </div>
+
+      <div class="box">
+         <img src="images/clock-icon.png" alt="">
+         <h3>opening hours</h3>
+         <p>00:07am to 00:10pm </p>
+      </div>
+
+      <div class="box">
+         <img src="images/map-icon.png" alt="">
+         <h3>our address</h3>
+         <a href="https://maps.app.goo.gl/cmz35vHzwXUNB4Gt5">Manipal,India - 576104</a>
+      </div>
+
+      <div class="box">
+         <img src="images/phone-icon.png" alt="">
+         <h3>our number</h3>
+         <a href="tel:+919972761453">+91-99727-61453</a>
+         <a href="tel:+919497641978">+91-94976-41978</a>
+         <a href="tel:+917032033839">+91-7032033839</a>
+      </div>
+
+   </section>
+
+    
+
+</footer>
+
+<div class="loader">
+   <img src="images/loader.gif" alt="">
+</div>
+
+</body>
+</html>

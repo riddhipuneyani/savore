@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Savoré - Menu</title>
+   <link rel="icon" type="image/png" href="images/savore_black.png">
+   <!-- font awesome cdn link  -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+
+   <!-- custom css file link  -->
+   <link rel="stylesheet" href="css/style.css">
+
+   
+</head>
+<body>
+
+<!-- Loader -->
+<div class="loader">
+   <img src="images/loader.gif" alt="Loading...">
+</div>
+   
+<header class="header">
+   <section class="flex">
+      <a href="#">
+         <img src="images/savore_yellow.png" alt="Savore Logo" class="logo">
+      </a>
+      <nav class="navbar">
+         <a href="home.html">home</a>
+         <a href="menu.html" class="active">menu</a>
+         <a href="about.html">about</a>
+         <a href="contact.html">contact</a>
+      </nav>
+
+      <div class="icons">
+         <a href="search.html"><i class="fas fa-search"></i></a>
+         <a href="cart.html"><i class="fas fa-shopping-cart"></i><span id="cart-count">(0)</span></a>
+         <div id="user-btn" class="fas fa-user"></div>
+         <div id="menu-btn" class="fas fa-bars"></div>
+      </div>
+
+      <div class="profile">
+         <div id="guest-view">
+            <p class="account"><a href="login.html">Login</a> or <a href="register.html">Register</a></p>
+         </div>
+       
+         <div id="user-view" style="display: none;">
+            <p class="name" id="username"></p>
+            <div class="flex">
+               <a href="profile.html" class="btn">Profile</a>
+               <button id="logout-btn" class="delete-btn">Logout</button>
+            </div>
+         </div>
+      </div>
+   </section>
+</header>
+
+<div class="heading">
+   <h3>MENU</h3>
+   <p><a href="home.html">back to home </a> </p>
+</div>
+
+<section class="products">
+
+   <h1 class="title">Dishes Available</h1>
+
+   <div class="box-container">
+
+      <div class="box" data-id="pizza-1">
+         <a href="quick_view.html" class="fas fa-eye"></a>
+         <button class="fas fa-shopping-cart" onclick="addToCart({
+            id: 'pizza-1',
+            name: 'Veggie Delight Pizza',
+            price: 199,
+            image: 'uploaded_img/pizza-1.png',
+            category: 'fast food'
+         })"></button>
+         <img src="uploaded_img/pizza-1.png" alt="">
+         <a href="category.html" class="cat">fast food</a>
+         <div class="name">Veggie Delight Pizza</div>
+         <div class="flex">
+            <div class="price"><span>₹</span>199<span>/-</span></div>
+            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
+         </div>
+      </div>
+
+      <div class="box" data-id="pasta-1">
+         <a href="quick_view.html" class="fas fa-eye"></a>
+         <button class="fas fa-shopping-cart" onclick="addToCart({
+            id: 'pasta-1',
+            name: 'Alfredo Pasta',
+            price: 250,
+            image: 'images/alfredo pasta.webp',
+            category: 'dishes'
+         })"></button>
+         <img src="images/alfredo pasta.webp" alt="">
+         <a href="category.html" class="cat">dishes</a>
+         <div class="name">Alfredo Pasta</div>
+         <div class="flex">
+            <div class="price"><span>₹</span>250<span>/-</span></div>
+            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
+         </div>
+      </div>
+
+      <div class="box" data-id="burger-1">
+         <a href="quick_view.html" class="fas fa-eye"></a>
+         <button class="fas fa-shopping-cart" onclick="addToCart({
+            id: 'burger-1',
+            name: 'Cheese Hamburger',
+            price: 150,
+            image: 'uploaded_img/burger-1.png',
+            category: 'fast food'
+         })"></button>
+         <img src="uploaded_img/burger-1.png" alt="">
+         <a href="category.html" class="cat">fast food</a>
+         <div class="name">Cheese Hamburger</div>
+         <div class="flex">
+            <div class="price"><span>₹</span>150<span>/-</span></div>
+            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
+         </div>
+      </div>
+
+      <div class="box" data-id="dessert-1">
+         <a href="quick_view.html" class="fas fa-eye"></a>
+         <button class="fas fa-shopping-cart" onclick="addToCart({
+            id: 'dessert-1',
+            name: 'Tiramisu',
+            price: 200,
+            image: 'images/tiramisu.jpeg',
+            category: 'dessert'
+         })"></button>
+         <img src="images/tiramisu.jpeg" alt="">
+         <a href="category.html" class="cat">dessert</a>
+         <div class="name">Tiramisu</div>
+         <div class="flex">
+            <div class="price"><span>₹</span>200<span>/-</span></div>
+            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
+         </div>
+      </div>
+
+      <div class="box" data-id="drink-1">
+         <a href="quick_view.html" class="fas fa-eye"></a>
+         <button class="fas fa-shopping-cart" onclick="addToCart({
+            id: 'drink-1',
+            name: 'Classic Cold Coffee',
+            price: 99,
+            image: 'images/cold coffee.jpg',
+            category: 'drinks'
+         })"></button>
+         <img src="images/cold coffee.jpg" alt="">
+         <a href="category.html" class="cat">drinks</a>
+         <div class="name">Classic Cold Coffee</div>
+         <div class="flex">
+            <div class="price"><span>₹</span>99<span>/-</span></div>
+            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
+         </div>
+      </div>
+
+      <div class="box" data-id="drink-2">
+         <a href="quick_view.html" class="fas fa-eye"></a>
+         <button class="fas fa-shopping-cart" onclick="addToCart({
+            id: 'drink-2',
+            name: 'Fresh Lime Soda',
+            price: 40,
+            image: 'images/fresh lime soda.jpeg',
+            category: 'drinks'
+         })"></button>
+         <img src="images/fresh lime soda.jpeg" alt="">
+         <a href="category.html" class="cat">drinks</a>
+         <div class="name">Fresh Lime Soda</div>
+         <div class="flex">
+            <div class="price"><span>₹</span>40<span>/-</span></div>
+            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
+         </div>
+      </div>
+
+      <div class="box" data-id="dish-1">
+         <a href="quick_view.html" class="fas fa-eye"></a>
+         <button class="fas fa-shopping-cart" onclick="addToCart({
+            id: 'dish-1',
+            name: 'Spicy Chicken Wings',
+            price: 100,
+            image: 'images/chicken wings.webp',
+            category: 'dishes'
+         })"></button>
+         <img src="images/chicken wings.webp" alt="">
+         <a href="category.html" class="cat">dishes</a>
+         <div class="name">Spicy Chicken Wings</div>
+         <div class="flex">
+            <div class="price"><span>₹</span>100<span>/-</span></div>
+            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
+         </div>
+      </div>
+
+      <div class="box" data-id="dish-2">
+         <a href="quick_view.html" class="fas fa-eye"></a>
+         <button class="fas fa-shopping-cart" onclick="addToCart({
+            id: 'dish-2',
+            name: 'Paneer Tikka',
+            price: 90,
+            image: 'images/paneer tikka final 2.jpg',
+            category: 'dishes'
+         })"></button>
+         <img src="images/paneer tikka final 2.jpg" alt="">
+         <a href="category.html" class="cat">dishes</a>
+         <div class="name">Paneer Tikka</div>
+         <div class="flex">
+            <div class="price"><span>₹</span>90<span>/-</span></div>
+            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
+         </div>
+      </div>
+
+      <div class="box" data-id="dessert-2">
+         <a href="quick_view.html" class="fas fa-eye"></a>
+         <button class="fas fa-shopping-cart" onclick="addToCart({
+            id: 'dessert-2',
+            name: 'Gulab Jamun',
+            price: 79,
+            image: 'images/gulab jamun.avif',
+            category: 'dessert'
+         })"></button>
+         <img src="images/gulab jamun.avif" alt="">
+         <a href="category.html" class="cat">dessert</a>
+         <div class="name">Gulab Jamun</div>
+         <div class="flex">
+            <div class="price"><span>₹</span>79<span>/-</span></div>
+            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
+         </div>
+      </div>
+
+   </div>
+
+</section>
+
+<footer class="footer">
+
+   <section class="box-container">
+
+      <div class="box">
+         <img src="images/email-icon.png" alt="">
+         <h3>our email</h3>
+         <a href="mailto:riddhi.puneyani@gmail.com">riddhi.puneyani@gmail.com</a>
+         <a href="mailto:riyanoushad2000@gmail.com">riyanoushad2000@gmail.com</a>
+         <a href="mailto:yaminiprabhaclg@gmail.com">yaminiprabhaclg@gmail.com</a>
+      </div>
+
+      <div class="box">
+         <img src="images/clock-icon.png" alt="">
+         <h3>opening hours</h3>
+         <p>00:07am to 00:10pm </p>
+      </div>
+
+      <div class="box">
+         <img src="images/map-icon.png" alt="">
+         <h3>our address</h3>
+         <a href="https://maps.app.goo.gl/cmz35vHzwXUNB4Gt5">Manipal,India - 576104</a>
+      </div>
+
+      <div class="box">
+         <img src="images/phone-icon.png" alt="">
+         <h3>our number</h3>
+         <a href="tel:+919972761453">+91-99727-61453</a>
+         <a href="tel:+919497641978">+91-94976-41978</a>
+         <a href="tel:+917032033839">+91-70320-33839</a>
+      </div>
+
+   </section>
+
+</footer>
+
+<script src="js/script.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Menu page loaded');
+    
+    // Check login status
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = localStorage.getItem('token');
+    
+    const guestView = document.getElementById('guest-view');
+    const userView = document.getElementById('user-view');
+    const usernameSpan = document.getElementById('username');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    if (user && token) {
+        // User is logged in
+        guestView.style.display = 'none';
+        userView.style.display = 'flex';
+        usernameSpan.textContent = user.name;
+        
+        // Add logout functionality
+        logoutBtn.addEventListener('click', function() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        });
+    } else {
+        // User is not logged in
+        guestView.style.display = 'flex';
+        userView.style.display = 'none';
+    }
+});
+</script>
+
+</body>
+</html>

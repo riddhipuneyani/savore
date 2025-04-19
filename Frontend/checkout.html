@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Savoré - Checkout</title>
+   <link rel="icon" type="image/png" href="images/savore_black.png">
+   <!-- font awesome cdn link  -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+
+   <!-- custom css file link  -->
+   <link rel="stylesheet" href="css/style.css">
+
+   
+</head>
+<body>
+   
+<!-- Loader -->
+<div class="loader">
+   <img src="images/loader.gif" alt="Loading...">
+</div>
+
+<header class="header">
+   <section class="flex">
+      <a href="#">
+         <img src="images/savore_yellow.png" alt="Savore Logo" class="logo">
+      </a>
+      <nav class="navbar">
+         <a href="home.html">home</a>
+         <a href="about.html">about</a>
+         <a href="menu.html">menu</a>
+         <a href="contact.html">contact</a>
+      </nav>
+
+      <div class="icons">
+         <a href="search.html"><i class="fas fa-search"></i></a>
+         <a href="cart.html"><i class="fas fa-shopping-cart"></i><span id="cart-count">(0)</span></a>
+         <div id="user-btn" class="fas fa-user"></div>
+         <div id="menu-btn" class="fas fa-bars"></div>
+      </div>
+
+      <div class="profile">
+         <div id="guest-view">
+            <p class="account"><a href="login.html">Login</a> or <a href="register.html">Register</a></p>
+         </div>
+       
+         <div id="user-view" style="display: none;">
+            <p class="name" id="username"></p>
+            <div class="flex">
+               <a href="profile.html" class="btn">Profile</a>
+               <button id="logout-btn" class="delete-btn">Logout</button>
+            </div>
+         </div>
+      </div>
+   </section>
+</header>
+
+<div class="heading">
+   <h3>checkout</h3>
+   <p><a href="home.html">home </a> <span> / checkout</span></p>
+</div>
+
+<section class="checkout">
+   <h1 class="title">order summary</h1>
+
+   <div class="order-items">
+      <h3>Your Order Items</h3>
+      <div id="order-items-container" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+         <!-- Order items will be dynamically inserted here -->
+      </div>
+      <div class="order-total">
+         <p>Total Amount: <span id="order-total">₹0</span></p>
+      </div>
+   </div>
+
+   <form action="" method="post" id="checkout-form">
+      <h3>Delivery Information</h3>
+      <label>Name:</label>
+      <input type="text" id="name" name="name" required>
+
+      <label>Phone:</label>
+      <input type="tel" id="phone" name="phone" required pattern="[0-9]{10}">
+
+      <div class="address-fields">
+         <label>Street Address:</label>
+         <input type="text" id="street" name="street" required>
+
+         <label>City:</label>
+         <input type="text" id="city" name="city" required>
+
+         <label>State:</label>
+         <input type="text" id="state" name="state" required>
+
+         <label>Pincode:</label>
+         <input type="text" id="pincode" name="pincode" required pattern="[0-9]{6}">
+      </div>
+
+      <h3>Payment Information</h3>
+      <label>Payment Method:</label>
+      <select id="payment-method" name="payment_method" required>
+         <option value="">Select Payment Method</option>
+         <option value="Credit Card">Credit Card</option>
+         <option value="Debit Card">Debit Card</option>
+         <option value="UPI">UPI</option>
+         <option value="Cash on Delivery">Cash on Delivery</option>
+      </select>
+
+      <div id="card-details" style="display: none;">
+         <label>Card Number:</label>
+         <input type="text" id="card-number" name="card_number" pattern="[0-9]{16}">
+         
+         <label>Expiry Date:</label>
+         <input type="text" id="card-expiry" name="card_expiry" placeholder="MM/YY" pattern="[0-9]{2}/[0-9]{2}">
+         
+         <label>CVV:</label>
+         <input type="text" id="card-cvv" name="card_cvv" pattern="[0-9]{3,4}">
+      </div>
+
+      <div id="upi-details" style="display: none;">
+         <label>UPI ID:</label>
+         <input type="text" id="upi-id" name="upi_id" pattern="[a-zA-Z0-9.\-_]{2,49}@[a-zA-Z._]{2,49}">
+      </div>
+      
+      <input type="submit" value="place order" name="order" class="btn order-btn">
+   </form>
+</section>
+
+<footer class="footer">
+
+   <section class="box-container">
+
+      <div class="box">
+         <img src="images/email-icon.png" alt="">
+         <h3>our email</h3>
+         <a href="mailto:riddhi.puneyani@gmail.com">riddhi.puneyani@gmail.com</a>
+         <a href="mailto:riyanoushad2000@gmail.com">riyanoushad2000@gmail.com</a>
+         <a href="mailto:yaminiprabhaclg@gmail.com">yaminiprabhaclg@gmail.com</a>
+      </div>
+
+      <div class="box">
+         <img src="images/clock-icon.png" alt="">
+         <h3>opening hours</h3>
+         <p>00:07am to 00:10pm </p>
+      </div>
+
+      <div class="box">
+         <img src="images/map-icon.png" alt="">
+         <h3>our address</h3>
+         <a href="https://maps.app.goo.gl/cmz35vHzwXUNB4Gt5">Manipal,India - 576104</a>
+      </div>
+
+      <div class="box">
+         <img src="images/phone-icon.png" alt="">
+         <h3>our number</h3>
+         <a href="tel:+919972761453">+91-99727-61453</a>
+         <a href="tel:+919497641978">+91-94976-41978</a>
+         <a href="tel:+917032033839">+91-7032033839</a>
+      </div>
+
+   </section>
+
+</footer>
+
+<script src="js/script.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check login status when page loads
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = localStorage.getItem('token');
+    
+    const guestView = document.getElementById('guest-view');
+    const userView = document.getElementById('user-view');
+    const usernameSpan = document.getElementById('username');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    if (user && token) {
+        // User is logged in
+        guestView.style.display = 'none';
+        userView.style.display = 'flex';
+        usernameSpan.textContent = user.name;
+        
+        // Add logout functionality
+        logoutBtn.addEventListener('click', function() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        });
+    } else {
+        // User is not logged in
+        guestView.style.display = 'flex';
+        userView.style.display = 'none';
+        // Redirect to login if trying to access checkout
+        window.location.href = 'login.html';
+    }
+});
+</script>
+
+</body>
+</html>
