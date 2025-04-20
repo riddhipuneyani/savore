@@ -136,6 +136,12 @@ section{
    color:var(--black);
 }
 
+.header .flex .logo {
+   height: 100px;  /* Adjust the height as needed */
+   width: 250px;   /* Maintain aspect ratio */
+}
+
+
 .header .flex .navbar a{
    margin:0 1rem;
    font-size: 2rem;
