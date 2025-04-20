@@ -5,9 +5,18 @@ drop table deliveries;
 drop table orders;
 drop table delivery;
 drop table customer;
+drop table items;
 drop table menu;
 drop table employee;
 drop table admin;
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TRIGGER update_item_price';
+    EXECUTE IMMEDIATE 'DROP TRIGGER update_total_price_on_order';
+EXCEPTION
+    WHEN OTHERS THEN
+        NULL; -- Ignore errors if triggers don't exist
+END;
+/
 
 -- Admin Table
 CREATE TABLE admin(
@@ -46,12 +55,21 @@ CREATE TABLE menu (
     availability_status VARCHAR(20) CHECK (availability_status IN ('Available', 'Not Available'))
 );
 
+--Items Table
+CREATE TABLE items (
+    item_id VARCHAR(5),
+    menu_id VARCHAR(5) REFERENCES menu(menu_id),
+    quantity NUMBER NOT NULL,
+    price NUMBER NOT NULL,
+    PRIMARY KEY (item_id, menu_id)
+);
+
+
 -- Order Table
 CREATE TABLE orders(
     order_id VARCHAR(6) PRIMARY KEY,
     customer_id VARCHAR(5) REFERENCES customer(customer_id),
-    menu_id VARCHAR(6) REFERENCES menu(menu_id),
-    quantity NUMBER CHECK (quantity > 0),
+    item_id VARCHAR(5), --REFERENCES items(item_id),
     total_price NUMBER CHECK (total_price > 0),
     order_status VARCHAR(20) CHECK (order_status IN ('Pending', 'Processing', 'Completed', 'Cancelled')),
     order_date DATE DEFAULT SYSDATE
@@ -99,3 +117,54 @@ CREATE TABLE feedback (
     FOREIGN KEY (order_id) REFERENCES orders(order_id),
     FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
 );
+
+
+CREATE OR REPLACE TRIGGER update_item_price
+BEFORE INSERT OR UPDATE ON items
+FOR EACH ROW
+DECLARE
+    menu_item_price NUMBER(10,2);
+BEGIN
+    -- Fetch the price from the menu table based on the menu_id
+    SELECT price
+    INTO menu_item_price
+    FROM menu
+    WHERE menu_id = :NEW.menu_id;
+
+    -- If the price or quantity is updated, update the price of the item
+    :NEW.price := menu_item_price * :NEW.quantity;
+END;
+/
+
+
+CREATE OR REPLACE TRIGGER update_total_price_on_order
+BEFORE INSERT OR UPDATE ON orders
+FOR EACH ROW
+DECLARE
+    total NUMBER;
+BEGIN
+    SELECT SUM(price)
+    INTO total
+    FROM items
+    WHERE item_id = :NEW.item_id;
+
+    :NEW.total_price := total;
+END;
+/
+
+CREATE OR REPLACE TRIGGER update_payment_amount
+BEFORE INSERT OR UPDATE ON payment
+FOR EACH ROW
+DECLARE
+    order_total NUMBER;
+BEGIN
+    -- Get the total_price from orders table for the given order_id
+    SELECT total_price
+    INTO order_total
+    FROM orders
+    WHERE order_id = :NEW.order_id;
+
+    -- Set the amount field to the fetched total_price
+    :NEW.amount := order_total;
+END;
+/
