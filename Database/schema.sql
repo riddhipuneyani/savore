@@ -12,6 +12,7 @@ drop table admin;
 BEGIN
     EXECUTE IMMEDIATE 'DROP TRIGGER update_item_price';
     EXECUTE IMMEDIATE 'DROP TRIGGER update_total_price_on_order';
+    EXECUTE IMMEDIATE 'DROP TRIGGER update_payment_amount';
 EXCEPTION
     WHEN OTHERS THEN
         NULL; -- Ignore errors if triggers don't exist
