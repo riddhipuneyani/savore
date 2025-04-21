@@ -50,7 +50,22 @@ function handleLogout(e) {
 }
 
 // Cart functions
-function addToCart(itemId, name, price) {
+function addToCart(itemId, name, price, image) {
+    // Handle both parameter styles
+    let itemData;
+    if (typeof itemId === 'object') {
+        // Called with object parameter
+        itemData = itemId;
+    } else {
+        // Called with individual parameters
+        itemData = {
+            id: itemId,
+            name: name,
+            price: price,
+            image: image
+        };
+    }
+
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
         alert('Please login to add items to cart');
@@ -58,8 +73,32 @@ function addToCart(itemId, name, price) {
         return;
     }
 
-    const item = { id: itemId, name: name, price: price, quantity: 1 };
-    const existingItem = cart.find(i => i.id === itemId);
+    // Validate input data
+    if (!itemData.id || !itemData.name || !itemData.price) {
+        console.error('Invalid item data:', itemData);
+        alert('Invalid item data. Please try again.');
+        return;
+    }
+
+    // Ensure price is a number
+    const numericPrice = parseFloat(itemData.price);
+    if (isNaN(numericPrice)) {
+        console.error('Invalid price:', itemData.price);
+        alert('Invalid price. Please try again.');
+        return;
+    }
+
+    // Create item object with validated data
+    const item = {
+        id: itemData.id.toString(),
+        name: itemData.name.toString(),
+        price: numericPrice,
+        image: itemData.image || 'images/default-food.jpg',
+        quantity: 1
+    };
+
+    // Check if item already exists in cart
+    const existingItem = cart.find(i => i.id === item.id);
 
     if (existingItem) {
         existingItem.quantity += 1;
@@ -177,7 +216,7 @@ async function initializePage() {
         
         // Check if we need to redirect to login
         const currentPage = window.location.pathname.split('/').pop();
-        const protectedPages = ['profile.html', 'orders.html', 'checkout.html'];
+        const protectedPages = ['profile.html', 'orders.html', 'checkout.html', 'cart.html'];
         
         if (protectedPages.includes(currentPage) && !localStorage.getItem('token')) {
             console.log('Protected page accessed without auth, redirecting to login');
@@ -207,6 +246,10 @@ document.addEventListener('DOMContentLoaded', function() {
 window.handleLogout = handleLogout;
 window.addToCart = addToCart;
 window.updateCartCount = updateCartCount;
+window.updateCartDisplay = updateCartDisplay;
+window.removeFromCart = removeFromCart;
+window.updateQuantity = updateQuantity;
+window.clearCart = clearCart;
 
 // Function to fetch and update profile data
 async function fetchProfileData() {
@@ -326,82 +369,74 @@ function showProfileDropdown() {
 function updateCartDisplay() {
     const cartContainer = document.getElementById('cart-items');
     const emptyCart = document.getElementById('empty-cart');
-    const deleteAllBtn = document.getElementById('delete-all-btn');
     const cartTotal = document.getElementById('cart-total');
-    const orderItemsContainer = document.getElementById('order-items-container');
-    const orderTotal = document.getElementById('order-total');
+    const deleteAllBtn = document.getElementById('delete-all-btn');
+    const checkoutBtn = document.getElementById('checkout-btn');
 
-    // Update cart count on all pages
-    updateCartCount();
+    if (!cartContainer || !emptyCart) return;
 
-    // Update cart page if we're on it
-    if (cartContainer) {
-        if (cart.length === 0) {
-            cartContainer.innerHTML = '';
-            if (emptyCart) emptyCart.style.display = 'block';
-            if (deleteAllBtn) deleteAllBtn.style.display = 'none';
-            if (cartTotal) cartTotal.textContent = '₹0';
-            return;
-        }
-
-        if (emptyCart) emptyCart.style.display = 'none';
-        if (deleteAllBtn) deleteAllBtn.style.display = 'block';
-        
-        // Create cart items HTML
-        cartContainer.innerHTML = cart.map(item => `
-            <div class="box" data-id="${item.id}">
-                <a href="quick_view.html?id=${item.id}" class="fas fa-eye"></a>
-                <button class="fas fa-times" onclick="removeFromCart('${item.id}')"></button>
-                <img src="${item.image}" alt="${item.name}">
-                <div class="name">${item.name}</div>
-                <div class="flex">
-                    <div class="price"><span>₹</span>${item.price}</div>
-                    <input type="number" class="qty" min="1" max="99" value="${item.quantity}" 
-                        onchange="updateQuantity('${item.id}', this.value)">
-                </div>
-                <div class="sub-total">sub total : <span>₹${item.price * item.quantity}</span></div>
-            </div>
-        `).join('');
-
-        if (cartTotal) cartTotal.textContent = `₹${calculateCartTotal()}`;
+    if (cart.length === 0) {
+        cartContainer.innerHTML = '';
+        emptyCart.style.display = 'block';
+        if (cartTotal) cartTotal.textContent = '₹0';
+        if (deleteAllBtn) deleteAllBtn.style.display = 'none';
+        if (checkoutBtn) checkoutBtn.style.display = 'none';
+        return;
     }
 
-    // Update checkout page if we're on it
-    if (orderItemsContainer) {
-        if (cart.length === 0) {
-            orderItemsContainer.innerHTML = '<p>Your cart is empty</p>';
-            if (orderTotal) orderTotal.textContent = '₹0';
-            return;
-        }
+    emptyCart.style.display = 'none';
+    if (deleteAllBtn) deleteAllBtn.style.display = 'block';
+    if (checkoutBtn) checkoutBtn.style.display = 'inline-block';
 
-        orderItemsContainer.innerHTML = cart.map(item => `
-            <div class="order-item" style="display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid #eee;">
-                <span>${item.name} x ${item.quantity}</span>
-                <span>₹${item.price * item.quantity}</span>
+    // Calculate total
+    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    if (cartTotal) cartTotal.textContent = `₹${total}`;
+
+    // Create cart items HTML
+    cartContainer.innerHTML = cart.map(item => `
+        <div class="cart-item" data-id="${item.id}">
+            <button class="remove-btn" onclick="removeFromCart('${item.id}')">
+                <i class="fas fa-times"></i>
+            </button>
+            <img src="${item.image || 'images/default-food.jpg'}" alt="${item.name}" onerror="this.src='images/default-food.jpg'">
+            <div class="name">${item.name || 'Unnamed Item'}</div>
+            <div class="price">₹${item.price || 0}</div>
+            <div class="quantity">
+                <label>Quantity:</label>
+                <input type="number" min="1" value="${item.quantity || 1}" 
+                    onchange="updateQuantity('${item.id}', this.value)">
             </div>
-        `).join('');
-        if (orderTotal) orderTotal.textContent = `₹${calculateCartTotal()}`;
-    }
-}
-
-function calculateCartTotal() {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+            <div class="sub-total">Sub Total: <span>₹${(item.price || 0) * (item.quantity || 1)}</span></div>
+        </div>
+    `).join('');
 }
 
 function removeFromCart(itemId) {
-    if (confirm('Remove this item from cart?')) {
+    if (confirm('Are you sure you want to remove this item from your cart?')) {
         cart = cart.filter(item => item.id !== itemId);
-        localStorage.setItem('cart', JSON.stringify(cart));
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user) {
+            localStorage.setItem(`cart_${user.customer_id}`, JSON.stringify(cart));
+        }
         updateCartCount();
         updateCartDisplay();
     }
 }
 
 function updateQuantity(itemId, newQuantity) {
+    const quantity = parseInt(newQuantity);
+    if (quantity < 1) {
+        alert('Quantity must be at least 1');
+        return;
+    }
+
     const item = cart.find(item => item.id === itemId);
     if (item) {
-        item.quantity = parseInt(newQuantity);
-        localStorage.setItem('cart', JSON.stringify(cart));
+        item.quantity = quantity;
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user) {
+            localStorage.setItem(`cart_${user.customer_id}`, JSON.stringify(cart));
+        }
         updateCartCount();
         updateCartDisplay();
     }
@@ -410,7 +445,10 @@ function updateQuantity(itemId, newQuantity) {
 function clearCart() {
     if (confirm('Clear all items from cart?')) {
         cart = [];
-        localStorage.setItem('cart', JSON.stringify(cart));
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user) {
+            localStorage.setItem(`cart_${user.customer_id}`, JSON.stringify(cart));
+        }
         updateCartCount();
         updateCartDisplay();
     }
