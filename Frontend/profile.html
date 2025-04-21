@@ -166,11 +166,9 @@
          // Check if user is logged in
          const token = localStorage.getItem('token');
          const user = JSON.parse(localStorage.getItem('user'));
-         console.log('Current token:', token);
-         console.log('Current user:', user);
 
-         if (!token) {
-            console.log('No token found, redirecting to login');
+         if (!token || !user) {
+            console.log('No token or user found, redirecting to login');
             window.location.href = 'login.html';
             return;
          }
@@ -180,36 +178,48 @@
          errorMessage.style.display = 'none';
 
          // Fetch user profile data from backend
-         console.log('Fetching profile with token:', token);
          const response = await fetch('http://localhost:3000/api/auth/profile', {
             headers: {
                'Authorization': `Bearer ${token}`
             }
          });
 
-         console.log('Profile response status:', response.status);
+         if (response.status === 401) {
+            // Token is invalid or expired
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+            return;
+         }
+
          if (!response.ok) {
             const errorData = await response.json();
-            console.error('Profile fetch error:', errorData);
             throw new Error(errorData.error || 'Failed to fetch profile data');
          }
 
-         const profileData = await response.json();
-         console.log('Profile data:', profileData);
+         const data = await response.json();
+         const profileData = data.user;
 
          // Update profile information
-         document.getElementById('profile-name').textContent = profileData.name;
-         document.getElementById('profile-phone').textContent = profileData.phone_number;
-         document.getElementById('profile-email').textContent = profileData.email;
-         document.getElementById('profile-address').textContent = profileData.address;
+         document.getElementById('profile-name').textContent = profileData.name || 'Not provided';
+         document.getElementById('profile-phone').textContent = profileData.phone_number || 'Not provided';
+         document.getElementById('profile-email').textContent = profileData.email || 'Not provided';
+         document.getElementById('profile-address').textContent = profileData.address || 'Not provided';
          
          // Update header username
-         document.getElementById('username').textContent = profileData.name;
+         document.getElementById('username').textContent = profileData.name || 'User';
 
       } catch (error) {
          console.error('Error fetching profile:', error);
-         errorMessage.textContent = 'Failed to load profile data. Please try again.';
+         errorMessage.textContent = error.message || 'Failed to load profile data. Please try again.';
          errorMessage.style.display = 'block';
+         
+         // If it's an authentication error, redirect to login
+         if (error.message.includes('token') || error.message.includes('authentication')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+         }
       } finally {
          loadingSpinner.style.display = 'none';
       }
