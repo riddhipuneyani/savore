@@ -1,5 +1,5 @@
 // Global variables
-let cart = JSON.parse(localStorage.getItem('cart')) || [];
+let cart = [];
 const API_URL = 'http://localhost:3000/api';
 let isInitialized = false;
 
@@ -20,14 +20,30 @@ function hideLoader() {
     }
 }
 
+// Initialize cart from localStorage
+function initializeCart() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+        // Load cart for specific user
+        const userCart = JSON.parse(localStorage.getItem(`cart_${user.customer_id}`)) || [];
+        cart = userCart;
+    } else {
+        // Clear cart if no user
+        cart = [];
+    }
+    updateCartCount();
+}
+
 // Handle logout function
 function handleLogout(e) {
     if (e) e.preventDefault();
     console.log('Handling logout');
     
-    // Clear user data
+    // Clear user data and cart
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    cart = [];
+    localStorage.removeItem('cart');
     
     // Redirect to login page
     window.location.href = 'login.html';
@@ -51,16 +67,18 @@ function addToCart(itemId, name, price) {
         cart.push(item);
     }
 
-    localStorage.setItem('cart', JSON.stringify(cart));
+    // Save cart for specific user
+    localStorage.setItem(`cart_${user.customer_id}`, JSON.stringify(cart));
     updateCartCount();
+    updateCartDisplay();
 }
 
 function updateCartCount() {
     const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
-    const cartCountElement = document.getElementById('cart-count');
-    if (cartCountElement) {
-        cartCountElement.textContent = `(${cartCount})`;
-    }
+    const cartCountElements = document.querySelectorAll('.fa-shopping-cart + span');
+    cartCountElements.forEach(element => {
+        element.textContent = `(${cartCount})`;
+    });
 }
 
 // Basic UI initialization
@@ -151,11 +169,11 @@ async function initializePage() {
     showLoader();
     
     try {
-        // Initialize UI first
-        initializeUI();
+        // Initialize cart first
+        initializeCart();
         
-        // Initialize cart
-        updateCartCount();
+        // Initialize UI
+        initializeUI();
         
         // Check if we need to redirect to login
         const currentPage = window.location.pathname.split('/').pop();
@@ -236,11 +254,16 @@ async function updateLoginStatus() {
         const profileData = await fetchProfileData();
         if (profileData) {
             user = profileData;
+            // Initialize cart for the new user
+            initializeCart();
         }
+    } else {
+        // Clear cart if no user
+        cart = [];
+        localStorage.removeItem('cart');
+        updateCartCount();
+        updateCartDisplay();
     }
-
-    console.log('Current user:', user);
-    console.log('Current token:', token);
 
     const profileLinks = document.querySelectorAll('a[href="profile.html"]');
     const logoutBtns = document.querySelectorAll('#logout-btn, #profile-logout-btn');
@@ -249,63 +272,22 @@ async function updateLoginStatus() {
     const usernames = document.querySelectorAll('.username, #username, .user-name');
 
     if (user && token) {
-        console.log('User is logged in, updating UI elements');
-        
-        // Show profile links
-        profileLinks.forEach(link => {
-            link.style.display = 'inline-block';
-        });
-
-        // Update usernames
-        usernames.forEach(span => {
-            span.textContent = user.name;
-            span.style.display = 'block';
-            span.style.whiteSpace = 'nowrap';
-            span.style.overflow = 'hidden';
-            span.style.textOverflow = 'ellipsis';
-        });
-
-        // Show user views, hide guest views
-        userViews.forEach(view => {
-            view.style.display = 'block';
-            // Ensure flex container for buttons
-            const flexContainer = view.querySelector('.flex');
-            if (flexContainer) {
-                flexContainer.style.display = 'flex';
-                flexContainer.style.gap = '1rem';
-                flexContainer.style.justifyContent = 'center';
-                flexContainer.style.marginTop = '1.5rem';
-            }
-        });
+        // User is logged in
+        userViews.forEach(view => view.style.display = 'block');
         guestViews.forEach(view => view.style.display = 'none');
-
-        // Setup logout buttons
+        usernames.forEach(span => span.textContent = user.name);
         logoutBtns.forEach(btn => {
             btn.style.display = 'inline-block';
-            btn.removeEventListener('click', handleLogout);
-            btn.addEventListener('click', handleLogout);
+            btn.onclick = handleLogout;
         });
-
     } else {
-        console.log('No user logged in, updating UI elements');
-        
-        // Hide profile links
-        profileLinks.forEach(link => link.style.display = 'none');
-
-        // Clear and hide usernames
-        usernames.forEach(span => {
-            span.textContent = '';
-            span.style.display = 'none';
-        });
-
-        // Hide user views, show guest views
+        // User is not logged in
         userViews.forEach(view => view.style.display = 'none');
         guestViews.forEach(view => view.style.display = 'block');
-
-        // Hide logout buttons
+        usernames.forEach(span => span.textContent = 'Guest');
         logoutBtns.forEach(btn => {
             btn.style.display = 'none';
-            btn.removeEventListener('click', handleLogout);
+            btn.onclick = null;
         });
     }
 }
