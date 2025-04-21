@@ -30,25 +30,25 @@ INSERT INTO employee (employee_id, name, role, phone_number, salary) VALUES
 
 
 INSERT INTO customer (customer_id, name, phone_number, email, address, password) VALUES
-('C001', 'Priya Iyer', 7009876543, 'priya.iyer@gmail.com', 'Mumbai, India', 'priya123');
+('C001', 'Priya Iyer', 7009876543, 'priya.iyer@gmail.com', 'MIT Gate 2', 'priya123');
 INSERT INTO customer (customer_id, name, phone_number, email, address, password) VALUES
-('C002', 'Arjun Mehta', 7009876544, 'arjun.mehta@gmail.com', 'Delhi, India', 'arjun456');
+('C002', 'Arjun Mehta', 7009876544, 'arjun.mehta@gmail.com', 'Tiger Circle', 'arjun456');
 INSERT INTO customer (customer_id, name, phone_number, email, address, password) VALUES
-('C003', 'Neha Raj', 7009876545, 'neha.raj@gmail.com', 'Bangalore, India', 'neha789');
+('C003', 'Neha Raj', 7009876545, 'neha.raj@gmail.com', 'Padubidri', 'neha789');
 INSERT INTO customer (customer_id, name, phone_number, email, address, password) VALUES
-('C004', 'Karthik Rao', 7009876546, 'karthik.rao@gmail.com', 'Chennai, India', 'karthik321');
+('C004', 'Karthik Rao', 7009876546, 'karthik.rao@gmail.com', 'Malpe', 'karthik321');
 INSERT INTO customer (customer_id, name, phone_number, email, address, password) VALUES
-('C005', 'Sonali Desai', 7009876547, 'sonali.desai@gmail.com', 'Pune, India', 'sonali654');
+('C005', 'Sonali Desai', 7009876547, 'sonali.desai@gmail.com', 'Syndicate Circle', 'sonali654');
 INSERT INTO customer (customer_id, name, phone_number, email, address, password) VALUES
-('C006', 'Ritika Jain', 7009876548, 'ritika.jain@gmail.com', 'Hyderabad, India', 'ritika456');
+('C006', 'Ritika Jain', 7009876548, 'ritika.jain@gmail.com', 'MIT Gate 2', 'ritika456');
 INSERT INTO customer (customer_id, name, phone_number, email, address, password) VALUES
-('C007', 'Ravi Kumar', 7009876549, 'ravi.kumar@gmail.com', 'Kolkata, India', 'ravi789');
+('C007', 'Ravi Kumar', 7009876549, 'ravi.kumar@gmail.com', 'KMC Greens', 'ravi789');
 INSERT INTO customer (customer_id, name, phone_number, email, address, password) VALUES
-('C008', 'Tanvi Bhat', 7009876550, 'tanvi.bhat@gmail.com', 'Jaipur, India', 'tanvi321');
+('C008', 'Tanvi Bhat', 7009876550, 'tanvi.bhat@gmail.com', 'Syndicate Circle', 'tanvi321');
 INSERT INTO customer (customer_id, name, phone_number, email, address, password) VALUES
-('C009', 'Rajesh Malhotra', 7009876551, 'rajesh.malhotra@gmail.com', 'Ahmedabad, India', 'rajesh654');
+('C009', 'Rajesh Malhotra', 7009876551, 'rajesh.malhotra@gmail.com', 'Parkala', 'rajesh654');
 INSERT INTO customer (customer_id, name, phone_number, email, address, password) VALUES
-('C010', 'Simran Gill', 7009876552, 'simran.gill@gmail.com', 'Chandigarh, India', 'simran456');
+('C010', 'Simran Gill', 7009876552, 'simran.gill@gmail.com', 'Udupi', 'simran456');
 
 
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status) VALUES
