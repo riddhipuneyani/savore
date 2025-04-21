@@ -597,6 +597,8 @@ async function initializeCheckout() {
     const paymentMethod = document.getElementById('payment-method');
     const cardDetails = document.getElementById('card-details');
     const upiDetails = document.getElementById('upi-details');
+    const cartItemsContainer = document.getElementById('cart-items');
+    const totalAmountSpan = document.getElementById('total-amount');
 
     if (!checkoutForm) {
         console.error('Checkout form not found');
@@ -633,6 +635,34 @@ async function initializeCheckout() {
             document.getElementById('address').value = data.user.address || '';
             console.log('Form populated with customer data');
         }
+
+        // Display cart items and total
+        if (cartItemsContainer && totalAmountSpan) {
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p>Your cart is empty</p>';
+                totalAmountSpan.textContent = '0';
+            } else {
+                // Clear existing items
+                cartItemsContainer.innerHTML = '';
+                
+                // Add each cart item
+                cart.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'cart-item';
+                    itemElement.innerHTML = `
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-quantity">Qty: ${item.quantity}</div>
+                        <div class="item-price">₹${item.price * item.quantity}</div>
+                    `;
+                    cartItemsContainer.appendChild(itemElement);
+                });
+
+                // Calculate and display total
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                totalAmountSpan.textContent = total.toFixed(2);
+            }
+        }
+
     } catch (error) {
         console.error('Error fetching customer information:', error);
     }
