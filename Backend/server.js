@@ -221,7 +221,7 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
         // Generate order ID
         const result = await req.connection.execute('SELECT MAX(TO_NUMBER(SUBSTR(order_id, 2))) as max_id FROM orders');
         const maxId = result.rows[0].MAX_ID || 0;
-        const orderId = `O${String(maxId + 1).padStart(4, '0')}`;
+        const orderId = `O${String(maxId + 1).padStart(3, '0')}`;
         
         // Insert new order
         await req.connection.execute(
@@ -405,9 +405,8 @@ initialize().catch((err) => {
     console.error('Failed to initialize application:', err);
     process.exit(1);
 });
-
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error' });   
 });
