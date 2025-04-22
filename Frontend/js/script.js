@@ -224,9 +224,11 @@ async function initializePage() {
             return;
         }
 
-        // If we're on the about page, fetch feedbacks
+        // Initialize specific page features
         if (currentPage === 'about.html') {
             await fetchAndDisplayFeedbacks();
+        } else if (currentPage === 'checkout.html') {
+            await initializeCheckout();
         }
     } catch (error) {
         console.error('Error during initialization:', error);
@@ -589,30 +591,87 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // Checkout Process
-function initializeCheckout() {
+async function initializeCheckout() {
+    console.log('Initializing checkout...');
     const checkoutForm = document.getElementById('checkout-form');
     const paymentMethod = document.getElementById('payment-method');
     const cardDetails = document.getElementById('card-details');
     const upiDetails = document.getElementById('upi-details');
+    const cartItemsContainer = document.getElementById('cart-items');
+    const totalAmountSpan = document.getElementById('total-amount');
 
-    if (!checkoutForm) return;
+    if (!checkoutForm) {
+        console.error('Checkout form not found');
+        return;
+    }
 
-    // Pre-fill user information if available
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {
-        document.getElementById('name').value = user.name;
-        document.getElementById('phone').value = user.phone;
-        document.getElementById('street').value = user.street;
-        document.getElementById('city').value = user.city;
-        document.getElementById('state').value = user.state;
-        document.getElementById('pincode').value = user.pincode;
+    try {
+        // Fetch customer information from profile endpoint
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error('No token found');
+            return;
+        }
+
+        console.log('Fetching customer profile...');
+        const response = await fetch(`${API_URL}/auth/profile`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch profile data');
+        }
+
+        const data = await response.json();
+        console.log('Profile data:', data);
+
+        if (data.user) {
+            // Pre-fill form with customer information
+            document.getElementById('name').value = data.user.name || '';
+            document.getElementById('email').value = data.user.email || '';
+            document.getElementById('phone').value = data.user.phone_number || '';
+            document.getElementById('address').value = data.user.address || '';
+            console.log('Form populated with customer data');
+        }
+
+        // Display cart items and total
+        if (cartItemsContainer && totalAmountSpan) {
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p>Your cart is empty</p>';
+                totalAmountSpan.textContent = '0';
+            } else {
+                // Clear existing items
+                cartItemsContainer.innerHTML = '';
+                
+                // Add each cart item
+                cart.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'cart-item';
+                    itemElement.innerHTML = `
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-quantity">Qty: ${item.quantity}</div>
+                        <div class="item-price">₹${item.price * item.quantity}</div>
+                    `;
+                    cartItemsContainer.appendChild(itemElement);
+                });
+
+                // Calculate and display total
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                totalAmountSpan.textContent = total.toFixed(2);
+            }
+        }
+
+    } catch (error) {
+        console.error('Error fetching customer information:', error);
     }
 
     // Handle payment method change
     paymentMethod?.addEventListener('change', (e) => {
         const method = e.target.value;
-        cardDetails.style.display = method.includes('Card') ? 'block' : 'none';
-        upiDetails.style.display = method === 'UPI' ? 'block' : 'none';
+        cardDetails.style.display = (method === 'credit-card' || method === 'debit-card') ? 'block' : 'none';
+        upiDetails.style.display = method === 'upi' ? 'block' : 'none';
     });
 
     // Handle form submission
@@ -630,19 +689,20 @@ function initializeCheckout() {
             total: calculateCartTotal(),
             deliveryInfo: {
                 name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
                 phone: document.getElementById('phone').value,
-                street: document.getElementById('street').value,
+                address: document.getElementById('address').value,
                 city: document.getElementById('city').value,
                 state: document.getElementById('state').value,
                 pincode: document.getElementById('pincode').value
             },
             payment: {
                 method: paymentMethod.value,
-                details: paymentMethod.value.includes('Card') ? {
+                details: (paymentMethod.value === 'credit-card' || paymentMethod.value === 'debit-card') ? {
                     cardNumber: document.getElementById('card-number').value,
                     expiry: document.getElementById('card-expiry').value,
                     cvv: document.getElementById('card-cvv').value
-                } : paymentMethod.value === 'UPI' ? {
+                } : paymentMethod.value === 'upi' ? {
                     upiId: document.getElementById('upi-id').value
                 } : null
             }
