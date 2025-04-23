@@ -55,6 +55,8 @@ CREATE TABLE menu (
     price NUMBER(10,2) NOT NULL CHECK (price > 0),
     description VARCHAR(500),
     availability_status VARCHAR(20) CHECK (availability_status IN ('Available', 'Not Available')),
+    image_link VARCHAR(200)
+    availability_status VARCHAR(20) CHECK (availability_status IN ('Available', 'Not Available')),
     image_link VARCHAR(100)
 );
 
