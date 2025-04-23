@@ -2,6 +2,8 @@ const oracledb = require('oracledb');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = 'your-secret-key';
+const path = require('path');
+const fs = require('fs');
 
 const adminController = {
     // Admin login
@@ -560,6 +562,159 @@ const adminController = {
             }
             
             res.status(500).json({ error: 'Error changing password' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Get all menu items
+    getAllMenuItems: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            
+            // First, let's check the actual table structure
+            const tableCheck = await connection.execute(
+                `SELECT column_name, data_type 
+                 FROM user_tab_columns 
+                 WHERE table_name = 'MENU'`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+            console.log('Actual table structure:', tableCheck.rows);
+
+            // Now try to get the menu items with the correct column names
+            const result = await connection.execute(
+                `SELECT menu_id as "ITEM_ID", 
+                        item_name as "ITEM_NAME", 
+                        description as "DESCRIPTION", 
+                        price as "PRICE", 
+                        category as "CATEGORY",
+                        availability_status as "AVAILABILITY_STATUS"
+                 FROM menu
+                 ORDER BY category, item_name`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            console.log('Query result:', result.rows);
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching menu items:', error);
+            res.status(500).json({ error: 'Error fetching menu items' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Add new menu item
+    addMenuItem: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            const { name, description, price, category, image_link, availability_status } = req.body;
+
+            // Generate a new menu_id
+            const result = await connection.execute(
+                'SELECT MAX(TO_NUMBER(SUBSTR(menu_id, 2))) as max_id FROM menu'
+            );
+            const maxId = result.rows[0][0] || 0;
+            const newMenuId = `M${String(maxId + 1).padStart(3, '0')}`;
+
+            await connection.execute(
+                `INSERT INTO menu (menu_id, item_name, description, price, category, image_link, availability_status) 
+                 VALUES (:1, :2, :3, :4, :5, :6, :7)`,
+                [newMenuId, name, description, price, category, image_link, availability_status || 'Available']
+            );
+
+            await connection.commit();
+
+            res.status(201).json({
+                message: 'Menu item added successfully',
+                itemId: newMenuId,
+                menuItem: {
+                    menu_id: newMenuId,
+                    item_name: name,
+                    description,
+                    price,
+                    category,
+                    image_link,
+                    availability_status: availability_status || 'Available'
+                }
+            });
+        } catch (error) {
+            console.error('Error adding menu item:', error);
+            res.status(500).json({ error: 'Error adding menu item' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Update menu item
+    updateMenuItem: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            const { menuId } = req.params;
+            const { name, description, price, category, availability_status } = req.body;
+
+            const updateQuery = `
+                UPDATE menu 
+                SET item_name = :1, description = :2, price = :3, category = :4, availability_status = :5
+                WHERE menu_id = :6
+            `;
+            const updateParams = [name, description, price, category, availability_status, menuId];
+
+            await connection.execute(updateQuery, updateParams);
+            await connection.commit();
+
+            res.json({ message: 'Menu item updated successfully' });
+        } catch (error) {
+            console.error('Error updating menu item:', error);
+            res.status(500).json({ error: 'Error updating menu item' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Delete menu item
+    deleteMenuItem: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            const { menuId } = req.params;
+
+            await connection.execute('DELETE FROM menu WHERE menu_id = :1', [menuId]);
+            await connection.commit();
+
+            res.json({ message: 'Menu item deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting menu item:', error);
+            res.status(500).json({ error: 'Error deleting menu item' });
         } finally {
             if (connection) {
                 try {

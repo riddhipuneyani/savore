@@ -8,6 +8,30 @@
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .status-available {
+            background-color: #4CAF50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .status-unavailable {
+            background-color: #f44336;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        #editItemAvailability {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+    </style>
 </head>
 
 <body>
@@ -85,11 +109,20 @@
                             <input type="number" id="itemPrice" placeholder="Price (₹)" step="0.01" required>
                             <select id="itemCategory" required>
                                 <option value="">Select Category</option>
-                                <option value="appetizer">Appetizer</option>
-                                <option value="main-course">Main Course</option>
-                                <option value="dessert">Dessert</option>
-                                <option value="beverage">Beverage</option>
+                                <option value="Veg Starter">Veg Starter</option>
+                                <option value="Non-Veg Starter">Non-Veg Starter</option>
+                                <option value="Veg Main Course">Veg Main Course</option>
+                                <option value="Non-Veg Main Course">Non-Veg Main Course</option>
+                                <option value="Desserts">Desserts</option>
+                                <option value="Drinks">Drinks</option>
+                                <option value="International">International</option>
                             </select>
+                            <input type="url" id="itemImageLink" placeholder="Image URL" required>
+                            <select id="itemAvailability" required>
+                                <option value="Available">Available</option>
+                                <option value="Not Available">Not Available</option>
+                            </select>
+                            <textarea id="itemDescription" placeholder="Item Description" required></textarea>
                             <button type="submit" class="add-item-btn">
                                 Add Item
                             </button>
@@ -107,7 +140,9 @@
                                     <th>#</th>
                                     <th>Item Name</th>
                                     <th>Category</th>
+                                    <th>Description</th>
                                     <th>Price (₹)</th>
+                                    <th>Availability</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -121,102 +156,235 @@
         </main>
     </div>
 
+    <!-- Edit Item Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Edit Menu Item</h2>
+            <form id="editForm" class="menu-form">
+                <input type="hidden" id="editItemId">
+                <div class="form-group">
+                    <input type="text" id="editItemName" placeholder="Item Name" required>
+                    <input type="number" id="editItemPrice" placeholder="Price (₹)" step="0.01" required>
+                    <select id="editItemCategory" required>
+                        <option value="">Select Category</option>
+                        <option value="Veg Starter">Veg Starter</option>
+                        <option value="Non-Veg Starter">Non-Veg Starter</option>
+                        <option value="Veg Main Course">Veg Main Course</option>
+                        <option value="Non-Veg Main Course">Non-Veg Main Course</option>
+                        <option value="Desserts">Desserts</option>
+                        <option value="Drinks">Drinks</option>
+                        <option value="International">International</option>
+                    </select>
+                    <input type="url" id="editItemImageLink" placeholder="Image URL" required>
+                    <select id="editItemAvailability" required>
+                        <option value="Available">Available</option>
+                        <option value="Not Available">Not Available</option>
+                    </select>
+                    <textarea id="editItemDescription" placeholder="Item Description" required></textarea>
+                    <button type="submit" class="action-btn process">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        const token = localStorage.getItem('adminToken');
         let menuItems = [];
 
-        // DOM Elements
-        const menuForm = document.getElementById("menuForm");
-        const itemName = document.getElementById("itemName");
-        const itemPrice = document.getElementById("itemPrice");
-        const itemCategory = document.getElementById("itemCategory");
-        const menuTableBody = document.querySelector("#menuTable tbody");
+        // Check if admin is logged in
+        if (!token) {
+            window.location.href = 'admin-login.html';
+        }
 
-        // Event Listeners
-        menuForm.addEventListener("submit", function(e) {
-            e.preventDefault();
-            if (validateForm()) {
-                addMenuItem();
+        // Fetch menu items
+        async function fetchMenuItems() {
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/menu', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    window.location.href = 'admin-login.html';
+                    return;
+                }
+
+                menuItems = await response.json();
+                renderMenu();
+            } catch (error) {
+                console.error('Error fetching menu items:', error);
+                alert('Error fetching menu items. Please try again.');
             }
-        });
-
-        // Functions
-        function validateForm() {
-            if (!itemName.value || !itemPrice.value || !itemCategory.value) {
-                alert("Please fill in all required fields");
-                return false;
-            }
-            return true;
         }
 
-        function addMenuItem() {
-            const newItem = {
-                name: itemName.value,
-                price: parseFloat(itemPrice.value).toFixed(2),
-                category: itemCategory.value
-            };
-            
-            menuItems.push(newItem);
-            clearForm();
-            renderMenu();
-        }
-
-        function clearForm() {
-            itemName.value = "";
-            itemPrice.value = "";
-            itemCategory.value = "";
-        }
-
+        // Render menu items
         function renderMenu() {
-            menuTableBody.innerHTML = "";
+            const tbody = document.querySelector('#menuTable tbody');
+            tbody.innerHTML = '';
+
             menuItems.forEach((item, index) => {
-                const row = document.createElement("tr");
+                const row = document.createElement('tr');
+                const availabilityClass = item.AVAILABILITY_STATUS === 'Available' ? 'status-available' : 'status-unavailable';
                 row.innerHTML = `
                     <td>${index + 1}</td>
-                    <td><input type="text" value="${item.name}" class="editable-field" data-field="name" data-index="${index}"></td>
+                    <td>${item.ITEM_NAME}</td>
+                    <td>${item.CATEGORY}</td>
+                    <td>${item.DESCRIPTION}</td>
+                    <td>₹${item.PRICE}</td>
+                    <td><span class="${availabilityClass}">${item.AVAILABILITY_STATUS}</span></td>
                     <td>
-                        <select class="editable-field" data-field="category" data-index="${index}">
-                            <option value="appetizer" ${item.category === 'appetizer' ? 'selected' : ''}>Appetizer</option>
-                            <option value="main-course" ${item.category === 'main-course' ? 'selected' : ''}>Main Course</option>
-                            <option value="dessert" ${item.category === 'dessert' ? 'selected' : ''}>Dessert</option>
-                            <option value="beverage" ${item.category === 'beverage' ? 'selected' : ''}>Beverage</option>
-                        </select>
-                    </td>
-                    <td><input type="number" value="${item.price}" class="editable-field" data-field="price" data-index="${index}" step="0.01"></td>
-                    <td>
-                        <button class="action-btn process" onclick="updateItem(${index})">
-                            <i class="fas fa-save"></i> Save
+                        <button class="action-btn process" onclick="openEditModal('${item.ITEM_ID}')">
+                            <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button class="action-btn view" onclick="deleteItem(${index})">
+                        <button class="action-btn delete" onclick="deleteItem('${item.ITEM_ID}')">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </td>
                 `;
-                menuTableBody.appendChild(row);
+                tbody.appendChild(row);
             });
         }
 
-        function updateItem(index) {
-            const fields = ['name', 'category', 'price'];
-            fields.forEach(field => {
-                const input = document.querySelector(`.editable-field[data-field="${field}"][data-index="${index}"]`);
-                if (input) {
-                    menuItems[index][field] = field === 'price' ? 
-                        parseFloat(input.value).toFixed(2) : 
-                        input.value;
+        // Add new menu item
+        document.getElementById('menuForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('itemName').value,
+                description: document.getElementById('itemDescription').value,
+                price: parseFloat(document.getElementById('itemPrice').value),
+                category: document.getElementById('itemCategory').value,
+                image_link: document.getElementById('itemImageLink').value,
+                availability_status: document.getElementById('itemAvailability').value
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/menu', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    alert('Menu item added successfully!');
+                    document.getElementById('menuForm').reset();
+                    fetchMenuItems(); // Refresh the table
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Error adding menu item');
                 }
-            });
-            renderMenu();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error adding menu item');
+            }
+        });
+
+        // Open edit modal
+        function openEditModal(itemId) {
+            const item = menuItems.find(item => item.ITEM_ID === itemId);
+            if (!item) return;
+
+            document.getElementById('editItemId').value = item.ITEM_ID;
+            document.getElementById('editItemName').value = item.ITEM_NAME;
+            document.getElementById('editItemPrice').value = item.PRICE;
+            document.getElementById('editItemCategory').value = item.CATEGORY;
+            document.getElementById('editItemImageLink').value = item.IMAGE_LINK;
+            document.getElementById('editItemAvailability').value = item.AVAILABILITY_STATUS;
+            document.getElementById('editItemDescription').value = item.DESCRIPTION;
+
+            document.getElementById('editModal').style.display = 'block';
         }
 
-        function deleteItem(index) {
-            if (confirm("Are you sure you want to delete this item?")) {
-                menuItems.splice(index, 1);
-                renderMenu();
+        // Edit menu item
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const menuId = document.getElementById('editItemId').value;
+            
+            const formData = {
+                name: document.getElementById('editItemName').value,
+                description: document.getElementById('editItemDescription').value,
+                price: parseFloat(document.getElementById('editItemPrice').value),
+                category: document.getElementById('editItemCategory').value,
+                image_link: document.getElementById('editItemImageLink').value,
+                availability_status: document.getElementById('editItemAvailability').value
+            };
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/admin/menu/${menuId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    alert('Menu item updated successfully!');
+                    document.getElementById('editModal').style.display = 'none';
+                    fetchMenuItems(); // Refresh the table
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Error updating menu item');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error updating menu item');
+            }
+        });
+
+        // Delete menu item
+        async function deleteItem(itemId) {
+            if (confirm('Are you sure you want to delete this menu item?')) {
+                try {
+                    const response = await fetch(`http://localhost:3000/api/admin/menu/${itemId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.status === 401) {
+                        window.location.href = 'admin-login.html';
+                        return;
+                    }
+
+                    if (response.ok) {
+                        alert('Menu item deleted successfully!');
+                        fetchMenuItems();
+                    } else {
+                        throw new Error('Failed to delete menu item');
+                    }
+                } catch (error) {
+                    console.error('Error deleting menu item:', error);
+                    alert('Error deleting menu item. Please try again.');
+                }
             }
         }
 
-        // Initial render
-        renderMenu();
+        // Modal functionality
+        const modal = document.getElementById('editModal');
+        const closeButton = document.querySelector('.close-modal');
+
+        closeButton.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Fetch menu items when page loads
+        fetchMenuItems();
     </script>
 </body>
 

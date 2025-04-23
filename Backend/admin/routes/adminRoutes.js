@@ -29,6 +29,12 @@ router.get('/analytics/customers', adminController.getCustomerAnalytics);
 // Settings routes
 router.put('/settings/password', adminController.changePassword);
 
+// Menu management routes
+router.get('/menu', adminController.getAllMenuItems);
+router.post('/menu', adminController.addMenuItem);
+router.put('/menu/:menuId', adminController.updateMenuItem);
+router.delete('/menu/:menuId', adminController.deleteMenuItem);
+
 // Add more protected admin routes here
 // Example:
 // router.get('/orders', adminController.getOrders);
