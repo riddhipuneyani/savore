@@ -342,8 +342,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <p> address : <span>${user.address}</span> </p>
                 <p> your orders : <span>${orderItems}</span> </p>
                 <p> total price : <span>₹${order.total_price}</span> </p>
-                <p> payment method : <span>cash on delivery</span> </p>
-                <p> payment status : <span class="order-status ${statusClass}">${order.order_status}</span> </p>
+                <p> payment method : <span>${order.payment_method}</span> </p>
+                <p> payment status : <span>${order.payment_status}</span> </p>
+                <p> order status : <span class="order-status ${statusClass}">${order.order_status}</span> </p>
             `;
             ordersContainer.appendChild(orderElement);
         });

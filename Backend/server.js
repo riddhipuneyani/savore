@@ -246,10 +246,12 @@ app.get('/api/orders', [authenticateToken, getConnection], async (req, res) => {
         
         const result = await req.connection.execute(
             `SELECT o.order_id, o.customer_id, o.order_date, o.order_status, o.total_price,
-                    m.item_name, i.quantity, i.price as item_price
+                    m.item_name, i.quantity, i.price as item_price,
+                    p.payment_method, p.payment_status
              FROM orders o 
              JOIN items i ON o.item_id = i.item_id
              JOIN menu m ON i.menu_id = m.menu_id
+             LEFT JOIN payment p ON o.order_id = p.order_id
              WHERE o.customer_id = :1 
              ORDER BY o.order_date DESC, o.order_id`,
             [customerId],
@@ -268,6 +270,8 @@ app.get('/api/orders', [authenticateToken, getConnection], async (req, res) => {
                     order_date: row.ORDER_DATE,
                     order_status: row.ORDER_STATUS,
                     total_price: row.TOTAL_PRICE,
+                    payment_method: row.PAYMENT_METHOD || 'Not specified',
+                    payment_status: row.PAYMENT_STATUS || 'Pending',
                     items: []
                 });
             }
