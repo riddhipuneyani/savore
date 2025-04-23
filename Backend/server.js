@@ -6,6 +6,9 @@ const dbConfig = require('./dbconfig');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// Import admin routes
+const adminRoutes = require('./admin/routes/adminRoutes');
+
 // Create the Express app
 const app = express();
 const port = 3000;
@@ -503,6 +506,9 @@ app.get('/api/feedbacks', async (req, res) => {
         }
     }
 });
+
+// Admin routes
+app.use('/api/admin', adminRoutes);
 
 // Initialize the application
 initialize().catch((err) => {

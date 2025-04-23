@@ -59,7 +59,7 @@
                 <h1 class="dashboard-title">Dashboard Overview</h1>
                 <div class="user-profile">
                     <img src="../Frontend/images/user-icon.png" alt="Admin Profile">
-                    <span>Admin</span>
+                    <span id="adminName">Loading...</span>
                     <button class="logout-btn" id="logoutBtn">
                         <i class="fas fa-sign-out-alt"></i>
                         Logout
@@ -70,7 +70,7 @@
             <div class="stats-container">
                 <div class="stat-card">
                     <h3>Total Orders</h3>
-                    <p>1,234</p>
+                    <p id="totalOrders">Loading...</p>
                     <div class="stat-trend positive">
                         <i class="fas fa-arrow-up"></i>
                         <span>12%</span>
@@ -78,7 +78,7 @@
                 </div>
                 <div class="stat-card">
                     <h3>Active Customers</h3>
-                    <p>567</p>
+                    <p id="activeCustomers">Loading...</p>
                     <div class="stat-trend positive">
                         <i class="fas fa-arrow-up"></i>
                         <span>5%</span>
@@ -86,7 +86,7 @@
                 </div>
                 <div class="stat-card">
                     <h3>Menu Items</h3>
-                    <p>89</p>
+                    <p id="menuItems">Loading...</p>
                     <div class="stat-trend">
                         <i class="fas fa-minus"></i>
                         <span>0%</span>
@@ -108,28 +108,8 @@
                                 <th>Action</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>#1234</td>
-                                <td>John Doe</td>
-                                <td>3 items</td>
-                                <td>$45.99</td>
-                                <td><span class="status pending">Pending</span></td>
-                                <td>
-                                    <button class="action-btn view">View</button>
-                                    <button class="action-btn process">Process</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>#1235</td>
-                                <td>Jane Smith</td>
-                                <td>2 items</td>
-                                <td>$32.50</td>
-                                <td><span class="status completed">Completed</span></td>
-                                <td>
-                                    <button class="action-btn view">View</button>
-                                </td>
-                            </tr>
+                        <tbody id="ordersTableBody">
+                            <!-- Orders will be populated dynamically -->
                         </tbody>
                     </table>
                 </div>
@@ -138,19 +118,35 @@
     </div>
 
     <script>
-        // Add logout functionality
+        // Check authentication on page load
         document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('adminToken');
+            const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+
+            if (!token || !adminData) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            // Display admin name
+            document.getElementById('adminName').textContent = adminData.name;
+
+            // Add logout functionality
             const logoutBtn = document.getElementById('logoutBtn');
             logoutBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 if(confirm('Are you sure you want to logout?')) {
-                    // Clear any session data if needed
-                    sessionStorage.clear();
-                    localStorage.clear();
+                    // Clear admin data
+                    localStorage.removeItem('adminToken');
+                    localStorage.removeItem('adminData');
                     // Redirect to login page
                     window.location.href = 'admin-login.html';
                 }
             });
+
+            // TODO: Add functions to fetch and display dashboard data
+            // fetchDashboardData();
+            // fetchRecentOrders();
         });
     </script>
 </body>
