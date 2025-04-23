@@ -49,6 +49,32 @@
          line-height: 1.5;
       }
 
+      .user .stats {
+         display: flex;
+         justify-content: space-around;
+         margin: 2rem 0;
+         padding: 1rem;
+         background: #f8f9fa;
+         border-radius: 8px;
+      }
+
+      .user .stat-item {
+         text-align: center;
+      }
+
+      .user .stat-item h4 {
+         font-size: 1.2rem;
+         color: #333;
+         margin-bottom: 0.5rem;
+      }
+
+      .user .stat-item p {
+         font-size: 1.5rem;
+         color: #ff6b6b;
+         font-weight: bold;
+         margin: 0;
+      }
+
       .user .btn {
          display: inline-block;
          margin: 0.5rem;
@@ -151,6 +177,18 @@
       <p><i class="fas fa-phone"></i> <span id="profile-phone">Loading...</span></p>
       <p><i class="fas fa-envelope"></i> <span id="profile-email">Loading...</span></p>
       <p class="address"><i class="fas fa-map-marker-alt"></i> <span id="profile-address">Loading...</span></p>
+      
+      <div class="stats">
+         <div class="stat-item">
+            <h4>Total Orders</h4>
+            <p id="total-orders">0</p>
+         </div>
+         <div class="stat-item">
+            <h4>Total Spent</h4>
+            <p id="total-spent">₹0</p>
+         </div>
+      </div>
+
       <div style="text-align: center;">
          <a href="update_profile.html" class="btn">update profile</a>
       </div>
@@ -206,6 +244,8 @@
          document.getElementById('profile-phone').textContent = profileData.phone_number || 'Not provided';
          document.getElementById('profile-email').textContent = profileData.email || 'Not provided';
          document.getElementById('profile-address').textContent = profileData.address || 'Not provided';
+         document.getElementById('total-orders').textContent = profileData.total_orders || '0';
+         document.getElementById('total-spent').textContent = `₹${profileData.total_spent || '0'}`;
          
          // Update header username
          document.getElementById('username').textContent = profileData.name || 'User';
