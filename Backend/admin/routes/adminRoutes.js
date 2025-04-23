@@ -21,6 +21,11 @@ router.get('/customers', adminController.getAllCustomers);
 router.get('/customers/:customerId', adminController.getCustomerDetails);
 router.delete('/customers/:customerId', adminController.deleteCustomer);
 
+// Analytics routes
+router.get('/analytics/sales', adminController.getSalesAnalytics);
+router.get('/analytics/menu', adminController.getMenuAnalytics);
+router.get('/analytics/customers', adminController.getCustomerAnalytics);
+
 // Add more protected admin routes here
 // Example:
 // router.get('/orders', adminController.getOrders);

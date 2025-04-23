@@ -359,6 +359,165 @@ const adminController = {
                 }
             }
         }
+    },
+
+    // Get sales analytics
+    getSalesAnalytics: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            
+            // Get total sales and average order value
+            const salesResult = await connection.execute(
+                `SELECT 
+                    SUM(TOTAL_PRICE) as total_sales,
+                    AVG(TOTAL_PRICE) as avg_order_value,
+                    COUNT(*) as total_orders
+                 FROM orders`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            // Get sales by order status
+            const statusResult = await connection.execute(
+                `SELECT 
+                    ORDER_STATUS,
+                    COUNT(*) as count,
+                    SUM(TOTAL_PRICE) as total
+                 FROM orders
+                 GROUP BY ORDER_STATUS`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            res.json({
+                totalSales: salesResult.rows[0].TOTAL_SALES || 0,
+                avgOrderValue: salesResult.rows[0].AVG_ORDER_VALUE || 0,
+                totalOrders: salesResult.rows[0].TOTAL_ORDERS || 0,
+                salesByStatus: statusResult.rows
+            });
+        } catch (error) {
+            console.error('Error fetching sales analytics:', error);
+            res.status(500).json({ error: 'Error fetching sales analytics' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Get menu analytics
+    getMenuAnalytics: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            
+            // Get top selling items
+            const topItemsResult = await connection.execute(
+                `SELECT 
+                    m.ITEM_NAME,
+                    COUNT(o.ORDER_ID) as order_count,
+                    SUM(o.QUANTITY) as total_quantity,
+                    SUM(o.TOTAL_PRICE) as total_revenue
+                 FROM menu m
+                 JOIN orders o ON m.MENU_ID = o.MENU_ID
+                 GROUP BY m.ITEM_NAME
+                 ORDER BY total_revenue DESC
+                 FETCH FIRST 5 ROWS ONLY`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            // Get menu categories distribution
+            const categoriesResult = await connection.execute(
+                `SELECT 
+                    CATEGORY,
+                    COUNT(*) as item_count,
+                    SUM(PRICE) as total_value
+                 FROM menu
+                 GROUP BY CATEGORY`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            res.json({
+                topSellingItems: topItemsResult.rows,
+                categoriesDistribution: categoriesResult.rows
+            });
+        } catch (error) {
+            console.error('Error fetching menu analytics:', error);
+            res.status(500).json({ error: 'Error fetching menu analytics' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Get customer analytics
+    getCustomerAnalytics: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            
+            // Get customer order statistics
+            const customerStatsResult = await connection.execute(
+                `SELECT 
+                    COUNT(DISTINCT c.CUSTOMER_ID) as total_customers,
+                    AVG(o.order_count) as avg_orders_per_customer,
+                    MAX(o.order_count) as max_orders
+                 FROM customer c
+                 LEFT JOIN (
+                     SELECT CUSTOMER_ID, COUNT(*) as order_count
+                     FROM orders
+                     GROUP BY CUSTOMER_ID
+                 ) o ON c.CUSTOMER_ID = o.CUSTOMER_ID`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            // Get top customers by spending
+            const topCustomersResult = await connection.execute(
+                `SELECT 
+                    c.NAME,
+                    c.EMAIL,
+                    COUNT(o.ORDER_ID) as order_count,
+                    SUM(o.TOTAL_PRICE) as total_spent
+                 FROM customer c
+                 JOIN orders o ON c.CUSTOMER_ID = o.CUSTOMER_ID
+                 GROUP BY c.NAME, c.EMAIL
+                 ORDER BY total_spent DESC
+                 FETCH FIRST 5 ROWS ONLY`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            res.json({
+                totalCustomers: customerStatsResult.rows[0].TOTAL_CUSTOMERS || 0,
+                avgOrdersPerCustomer: customerStatsResult.rows[0].AVG_ORDERS_PER_CUSTOMER || 0,
+                maxOrders: customerStatsResult.rows[0].MAX_ORDERS || 0,
+                topCustomers: topCustomersResult.rows
+            });
+        } catch (error) {
+            console.error('Error fetching customer analytics:', error);
+            res.status(500).json({ error: 'Error fetching customer analytics' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
     }
 };
 
