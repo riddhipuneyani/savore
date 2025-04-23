@@ -26,6 +26,9 @@ router.get('/analytics/sales', adminController.getSalesAnalytics);
 router.get('/analytics/menu', adminController.getMenuAnalytics);
 router.get('/analytics/customers', adminController.getCustomerAnalytics);
 
+// Settings routes
+router.put('/settings/password', adminController.changePassword);
+
 // Add more protected admin routes here
 // Example:
 // router.get('/orders', adminController.getOrders);

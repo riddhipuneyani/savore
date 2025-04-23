@@ -518,6 +518,57 @@ const adminController = {
                 }
             }
         }
+    },
+
+    // Change admin password
+    changePassword: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            const { currentPassword, newPassword } = req.body;
+            const adminId = req.admin.admin_id;
+
+            // Verify current password
+            const result = await connection.execute(
+                'SELECT PASSWORD FROM admin WHERE ADMIN_ID = :1',
+                [adminId],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Admin not found' });
+            }
+
+            if (result.rows[0].PASSWORD !== currentPassword) {
+                return res.status(401).json({ error: 'Current password is incorrect' });
+            }
+
+            // Update password (trigger will handle validation and logging)
+            await connection.execute(
+                'UPDATE admin SET PASSWORD = :1 WHERE ADMIN_ID = :2',
+                [newPassword, adminId]
+            );
+
+            await connection.commit();
+            res.json({ message: 'Password changed successfully' });
+        } catch (error) {
+            console.error('Error changing password:', error);
+            
+            // Check if error is from trigger
+            if (error.errorNum === 20001) {
+                return res.status(400).json({ error: error.message });
+            }
+            
+            res.status(500).json({ error: 'Error changing password' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
     }
 };
 
