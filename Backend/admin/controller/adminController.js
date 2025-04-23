@@ -236,6 +236,129 @@ const adminController = {
                 }
             }
         }
+    },
+
+    // Get all customers with their order count
+    getAllCustomers: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            
+            const result = await connection.execute(
+                `SELECT c.*, 
+                        (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.customer_id) as order_count
+                 FROM customer c
+                 ORDER BY c.name`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching customers:', error);
+            res.status(500).json({ error: 'Error fetching customers' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Get customer details with their orders
+    getCustomerDetails: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            const { customerId } = req.params;
+            
+            // Get customer details
+            const customerResult = await connection.execute(
+                `SELECT * FROM customer WHERE customer_id = :1`,
+                [customerId],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            if (customerResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Customer not found' });
+            }
+
+            // Get customer's orders
+            const ordersResult = await connection.execute(
+                `SELECT o.*, m.item_name, m.price
+                 FROM orders o
+                 JOIN menu m ON o.menu_id = m.menu_id
+                 WHERE o.customer_id = :1
+                 ORDER BY o.order_date DESC`,
+                [customerId],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            res.json({
+                customer: customerResult.rows[0],
+                orders: ordersResult.rows
+            });
+        } catch (error) {
+            console.error('Error fetching customer details:', error);
+            res.status(500).json({ error: 'Error fetching customer details' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Delete customer
+    deleteCustomer: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            const { customerId } = req.params;
+
+            // First check if customer has any orders
+            const ordersCheck = await connection.execute(
+                'SELECT COUNT(*) as order_count FROM orders WHERE customer_id = :1',
+                [customerId],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            if (ordersCheck.rows[0].ORDER_COUNT > 0) {
+                return res.status(400).json({ 
+                    error: 'Cannot delete customer with existing orders. Please delete orders first.' 
+                });
+            }
+
+            // Delete customer
+            const result = await connection.execute(
+                'DELETE FROM customer WHERE customer_id = :1',
+                [customerId]
+            );
+
+            if (result.rowsAffected === 0) {
+                return res.status(404).json({ error: 'Customer not found' });
+            }
+
+            await connection.commit();
+            res.json({ message: 'Customer deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting customer:', error);
+            res.status(500).json({ error: 'Error deleting customer' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
     }
 };
 

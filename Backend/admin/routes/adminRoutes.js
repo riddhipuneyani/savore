@@ -16,6 +16,11 @@ router.get('/orders', adminController.getAllOrders);
 router.get('/orders/:orderId', adminController.getOrderDetails);
 router.put('/orders/:orderId/status', adminController.updateOrderStatus);
 
+// Customer routes
+router.get('/customers', adminController.getAllCustomers);
+router.get('/customers/:customerId', adminController.getCustomerDetails);
+router.delete('/customers/:customerId', adminController.deleteCustomer);
+
 // Add more protected admin routes here
 // Example:
 // router.get('/orders', adminController.getOrders);
