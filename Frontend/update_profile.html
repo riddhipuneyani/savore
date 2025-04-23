@@ -254,76 +254,46 @@
 
    <script src="js/script.js"></script>
    <script>
-       document.addEventListener('DOMContentLoaded', async function() {
+       document.addEventListener('DOMContentLoaded', function() {
+           console.log('Update Profile page loaded');
+           
+           // Check login status
+           const user = JSON.parse(localStorage.getItem('user'));
            const token = localStorage.getItem('token');
-           if (!token) {
-               window.location.href = 'login.html';
-               return;
-           }
+           
+           const guestView = document.getElementById('guest-view');
+           const userView = document.getElementById('user-view');
+           const usernameSpan = document.getElementById('username');
+           const logoutBtns = document.querySelectorAll('#logout-btn'); // Get all logout buttons
 
-           try {
-               // Fetch current profile data
-               const response = await fetch('http://localhost:3000/api/auth/profile', {
-                   headers: {
-                       'Authorization': `Bearer ${token}`
-                   }
+           if (user && token) {
+               // User is logged in
+               guestView.style.display = 'none';
+               userView.style.display = 'flex';
+               usernameSpan.textContent = user.name;
+               
+               // Add logout functionality to all logout buttons
+               logoutBtns.forEach(btn => {
+                   btn.addEventListener('click', function(e) {
+                       e.preventDefault(); // Prevent default action
+                       console.log('Logout clicked');
+                       localStorage.removeItem('user');
+                       localStorage.removeItem('token');
+                       window.location.href = 'login.html';
+                   });
                });
 
-               if (!response.ok) {
-                   throw new Error('Failed to fetch profile data');
-               }
-
-               const data = await response.json();
-               const user = data.user;
-
-               // Fill form with current data
+               // Pre-fill form with user data
                document.getElementById('name').value = user.name || '';
                document.getElementById('email').value = user.email || '';
                document.getElementById('phone').value = user.phone_number || '';
                document.getElementById('address').value = user.address || '';
-
-               // Handle form submission
-               document.getElementById('update-profile-form').addEventListener('submit', async function(e) {
-                   e.preventDefault();
-
-                   const updateData = {
-                       name: document.getElementById('name').value.trim(),
-                       email: document.getElementById('email').value.trim(),
-                       phone_number: document.getElementById('phone').value.trim(),
-                       address: document.getElementById('address').value.trim()
-                   };
-
-                   try {
-                       const updateResponse = await fetch('http://localhost:3000/api/auth/profile', {
-                           method: 'PUT',
-                           headers: {
-                               'Authorization': `Bearer ${token}`,
-                               'Content-Type': 'application/json'
-                           },
-                           body: JSON.stringify(updateData)
-                       });
-
-                       const result = await updateResponse.json();
-
-                       if (!updateResponse.ok) {
-                           throw new Error(result.error || 'Failed to update profile');
-                       }
-
-                       // Update local storage with new user data
-                       localStorage.setItem('user', JSON.stringify(result.user));
-
-                       // Show success message
-                       showMessage('Profile updated successfully!', 'success');
-
-                   } catch (error) {
-                       console.error('Update error:', error);
-                       showMessage(error.message || 'Failed to update profile', 'error');
-                   }
-               });
-
-           } catch (error) {
-               console.error('Load error:', error);
-               showMessage(error.message || 'Failed to load profile data', 'error');
+           } else {
+               // User is not logged in
+               guestView.style.display = 'flex';
+               userView.style.display = 'none';
+               // Redirect to login if not authenticated
+               window.location.href = 'login.html';
            }
        });
 

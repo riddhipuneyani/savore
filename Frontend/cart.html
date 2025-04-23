@@ -255,12 +255,38 @@
 <script src="js/script.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize the page
-    initializePage();
+    console.log('Cart page loaded');
     
-    // Update cart display
-    updateCartDisplay();
+    // Check login status
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = localStorage.getItem('token');
     
+    const guestView = document.getElementById('guest-view');
+    const userView = document.getElementById('user-view');
+    const usernameSpan = document.getElementById('username');
+    const logoutBtns = document.querySelectorAll('#logout-btn'); // Get all logout buttons
+
+    if (user && token) {
+        // User is logged in
+        guestView.style.display = 'none';
+        userView.style.display = 'flex';
+        usernameSpan.textContent = user.name;
+        
+        // Add logout functionality to all logout buttons
+        logoutBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent default action
+                console.log('Logout clicked');
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                window.location.href = 'login.html';
+            });
+        });
+    } else {
+        // User is not logged in
+        guestView.style.display = 'flex';
+        userView.style.display = 'none';
+    }
 });
 </script>
 
