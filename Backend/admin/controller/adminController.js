@@ -724,6 +724,214 @@ const adminController = {
                 }
             }
         }
+    },
+
+    // Get all employees
+    getAllEmployees: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            
+            const result = await connection.execute(
+                `SELECT * FROM employee ORDER BY name`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching employees:', error);
+            res.status(500).json({ error: 'Error fetching employees' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Add new employee
+    addEmployee: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            const { name, role, phone_number, salary } = req.body;
+
+            // Generate employee ID (E001, E002, etc.)
+            const result = await connection.execute(
+                'SELECT MAX(TO_NUMBER(SUBSTR(employee_id, 2))) as max_id FROM employee'
+            );
+            const maxId = result.rows[0][0] || 0;
+            const employeeId = `E${String(maxId + 1).padStart(3, '0')}`;
+
+            // Validate role
+            if (!['Delivery', 'Chef', 'Manager'].includes(role)) {
+                return res.status(400).json({ error: 'Invalid role. Must be Delivery, Chef, or Manager' });
+            }
+
+            await connection.execute(
+                `INSERT INTO employee (
+                    employee_id, name, role, phone_number, salary
+                ) VALUES (
+                    :1, :2, :3, :4, :5
+                )`,
+                [employeeId, name, role, phone_number, salary]
+            );
+
+            await connection.commit();
+
+            res.status(201).json({
+                message: 'Employee added successfully',
+                employeeId: employeeId
+            });
+        } catch (error) {
+            console.error('Error adding employee:', error);
+            res.status(500).json({ error: 'Error adding employee' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Update employee
+    updateEmployee: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            const { employeeId } = req.params;
+            const { name, role, phone_number, salary } = req.body;
+
+            // Validate role
+            if (!['Delivery', 'Chef', 'Manager'].includes(role)) {
+                return res.status(400).json({ error: 'Invalid role. Must be Delivery, Chef, or Manager' });
+            }
+
+            const result = await connection.execute(
+                `UPDATE employee 
+                 SET name = :1,
+                     role = :2,
+                     phone_number = :3,
+                     salary = :4
+                 WHERE employee_id = :5`,
+                [name, role, phone_number, salary, employeeId]
+            );
+
+            if (result.rowsAffected === 0) {
+                return res.status(404).json({ error: 'Employee not found' });
+            }
+
+            await connection.commit();
+            res.json({ message: 'Employee updated successfully' });
+        } catch (error) {
+            console.error('Error updating employee:', error);
+            res.status(500).json({ error: 'Error updating employee' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Delete employee
+    deleteEmployee: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            const { employeeId } = req.params;
+
+            // First check if employee exists in delivery or chef tables
+            const deliveryCheck = await connection.execute(
+                'SELECT 1 FROM delivery WHERE employee_id = :1',
+                [employeeId]
+            );
+
+            if (deliveryCheck.rows.length > 0) {
+                await connection.execute(
+                    'DELETE FROM delivery WHERE employee_id = :1',
+                    [employeeId]
+                );
+            }
+
+            const chefCheck = await connection.execute(
+                'SELECT 1 FROM chef WHERE employee_id = :1',
+                [employeeId]
+            );
+
+            if (chefCheck.rows.length > 0) {
+                await connection.execute(
+                    'DELETE FROM chef WHERE employee_id = :1',
+                    [employeeId]
+                );
+            }
+
+            // Now delete from employee table
+            const result = await connection.execute(
+                'DELETE FROM employee WHERE employee_id = :1',
+                [employeeId]
+            );
+
+            if (result.rowsAffected === 0) {
+                return res.status(404).json({ error: 'Employee not found' });
+            }
+
+            await connection.commit();
+            res.json({ message: 'Employee deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting employee:', error);
+            res.status(500).json({ error: 'Error deleting employee' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Get employee by ID
+    getEmployeeById: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            const { employeeId } = req.params;
+
+            const result = await connection.execute(
+                'SELECT * FROM employee WHERE employee_id = :1',
+                [employeeId],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Employee not found' });
+            }
+
+            res.json(result.rows[0]);
+        } catch (error) {
+            console.error('Error fetching employee:', error);
+            res.status(500).json({ error: 'Error fetching employee' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
     }
 };
 

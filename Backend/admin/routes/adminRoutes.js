@@ -35,6 +35,13 @@ router.post('/menu', adminController.addMenuItem);
 router.put('/menu/:menuId', adminController.updateMenuItem);
 router.delete('/menu/:menuId', adminController.deleteMenuItem);
 
+// Employee management routes
+router.get('/employees', adminController.getAllEmployees);
+router.get('/employees/:employeeId', adminController.getEmployeeById);
+router.post('/employees', adminController.addEmployee);
+router.put('/employees/:employeeId', adminController.updateEmployee);
+router.delete('/employees/:employeeId', adminController.deleteEmployee);
+
 // Add more protected admin routes here
 // Example:
 // router.get('/orders', adminController.getOrders);
