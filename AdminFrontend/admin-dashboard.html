@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savore Admin Dashboard</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../Frontend/images/savore_logo_new.png" alt="Savore Logo" class="admin-logo">
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="admin-dashboard.html" class="active">
+                        <i class="fas fa-home"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="menu_management.html">
+                        <i class="fas fa-utensils"></i>
+                        Menu Management
+                    </a>
+                </li>
+                <li>
+                    <a href="orders.html">
+                        <i class="fas fa-shopping-cart"></i>
+                        Orders
+                    </a>
+                </li>
+                <li>
+                    <a href="customers.html">
+                        <i class="fas fa-users"></i>
+                        Customers
+                    </a>
+                </li>
+                <li>
+                    <a href="analytics.html">
+                        <i class="fas fa-chart-bar"></i>
+                        Analytics
+                    </a>
+                </li>
+                <li>
+                    <a href="settings.html">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <header class="dashboard-header">
+                <h1 class="dashboard-title">Dashboard Overview</h1>
+                <div class="user-profile">
+                    <img src="../Frontend/images/user-icon.png" alt="Admin Profile">
+                    <span id="adminName">Loading...</span>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
+            </header>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3>Total Orders</h3>
+                    <p id="totalOrders">Loading...</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Customers</h3>
+                    <p id="totalCustomers">Loading...</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Menu Items</h3>
+                    <p id="menuItems">Loading...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('adminToken');
+            const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+
+            if (!token || !adminData) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            // Display admin name
+            document.getElementById('adminName').textContent = adminData.name;
+
+            // Add logout functionality
+            const logoutBtn = document.getElementById('logoutBtn');
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if(confirm('Are you sure you want to logout?')) {
+                    // Clear admin data
+                    localStorage.removeItem('adminToken');
+                    localStorage.removeItem('adminData');
+                    // Redirect to login page
+                    window.location.href = 'admin-login.html';
+                }
+            });
+
+            // Fetch and display dashboard statistics
+            fetchDashboardStats();
+        });
+
+        async function fetchDashboardStats() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch('http://localhost:3000/api/admin/dashboard/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch dashboard stats');
+                }
+
+                const data = await response.json();
+
+                // Update total orders
+                document.getElementById('totalOrders').textContent = data.totalOrders;
+
+                // Update total customers
+                document.getElementById('totalCustomers').textContent = data.totalCustomers;
+
+                // Update menu items
+                document.getElementById('menuItems').textContent = data.menuItems;
+            } catch (error) {
+                console.error('Error fetching dashboard stats:', error);
+                // You might want to show an error message to the user here
+            }
+        }
+    </script>
+</body>
+</html>

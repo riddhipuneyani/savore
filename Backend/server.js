@@ -6,6 +6,9 @@ const dbConfig = require('./dbconfig');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// Import admin routes
+const adminRoutes = require('./admin/routes/adminRoutes');
+
 // Create the Express app
 const app = express();
 const port = 3000;
@@ -237,21 +240,66 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
 });
 
 // Get customer orders endpoint
-app.get('/api/orders', authenticateToken, async (req, res) => {
+app.get('/api/orders', [authenticateToken, getConnection], async (req, res) => {
     try {
-        const customerId = req.user.customerId;
+        const customerId = req.user.customer_id;
         
         const result = await req.connection.execute(
-            `SELECT o.*, m.item_name, m.price 
+            `SELECT o.order_id, o.customer_id, o.order_date, o.order_status, o.total_price,
+                    m.item_name, i.quantity, i.price as item_price,
+                    p.payment_method, p.payment_status
              FROM orders o 
-             JOIN menu m ON o.menu_id = m.menu_id 
+             JOIN items i ON o.item_id = i.item_id
+             JOIN menu m ON i.menu_id = m.menu_id
+             LEFT JOIN payment p ON o.order_id = p.order_id
              WHERE o.customer_id = :1 
-             ORDER BY o.order_date DESC`,
-            [customerId]
+             ORDER BY o.order_date DESC, o.order_id`,
+            [customerId],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
         
-        res.json(result.rows);
+        // Group orders by order_id
+        const ordersMap = new Map();
+        
+        result.rows.forEach(row => {
+            const orderId = row.ORDER_ID;
+            if (!ordersMap.has(orderId)) {
+                ordersMap.set(orderId, {
+                    order_id: orderId,
+                    customer_id: row.CUSTOMER_ID,
+                    order_date: row.ORDER_DATE,
+                    order_status: row.ORDER_STATUS,
+                    total_price: row.TOTAL_PRICE,
+                    payment_method: row.PAYMENT_METHOD || 'Not specified',
+                    payment_status: row.PAYMENT_STATUS || 'Pending',
+                    items: []
+                });
+            }
+            
+            ordersMap.get(orderId).items.push({
+                item_name: row.ITEM_NAME,
+                quantity: row.QUANTITY,
+                price: row.ITEM_PRICE
+            });
+        });
+
+        // Convert map to array
+        const formattedOrders = Array.from(ordersMap.values());
+
+        // Close the connection after we're done
+        await req.connection.close();
+        
+        res.json(formattedOrders);
     } catch (err) {
+        // Make sure to close the connection even if there's an error
+        if (req.connection) {
+            try {
+                await req.connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+        
         console.error('Error fetching orders:', err);
         res.status(500).json({ error: 'Failed to fetch orders' });
     }
@@ -268,28 +316,60 @@ app.get('/api/admin', async (req, res) => {
     }
 });
 
-// Get menu items endpoint
-app.get('/api/menu', async (req, res) => {
+// Get all menu items
+app.get('/api/menu', getConnection, async (req, res) => {
     try {
+        const query = `
+            SELECT menu_id as id, 
+                   item_name as name, 
+                   category, 
+                   price, 
+                   description, 
+                   availability_status, 
+                   image_link as image 
+            FROM menu 
+            WHERE availability_status = 'Available'
+        `;
+        
         const result = await req.connection.execute(
-            'SELECT * FROM menu WHERE availability_status = :1 ORDER BY category, item_name',
-            ['Available']
+            query,
+            [], // no bind params
+            { outFormat: oracledb.OUT_FORMAT_OBJECT } // This will return results as objects
         );
         
-        // Format the response
-        const menuItems = result.rows.map(item => ({
-            menu_id: item.MENU_ID,
-            item_name: item.ITEM_NAME,
+        // Format the data to ensure correct case
+        const formattedData = result.rows.map(item => ({
+            id: item.ID,
+            name: item.NAME,
             category: item.CATEGORY,
             price: item.PRICE,
             description: item.DESCRIPTION,
-            availability_status: item.AVAILABILITY_STATUS
+            availability_status: item.AVAILABILITY_STATUS,
+            image: item.IMAGE
         }));
+
+        // Close the connection after we're done
+        await req.connection.close();
         
-        res.json(menuItems);
-    } catch (err) {
-        console.error('Error fetching menu items:', err);
-        res.status(500).json({ error: 'Failed to fetch menu items' });
+        res.json({
+            status: 'success',
+            data: formattedData
+        });
+    } catch (error) {
+        // Make sure to close the connection even if there's an error
+        if (req.connection) {
+            try {
+                await req.connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+        
+        console.error('Error fetching menu items:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to fetch menu items'
+        });
     }
 });
 
@@ -499,6 +579,213 @@ app.get('/api/feedbacks', async (req, res) => {
                 await connection.close();
             } catch (err) {
                 console.error('Error closing connection:', err);
+            }
+        }
+    }
+});
+
+// Admin routes
+app.use('/api/admin', adminRoutes);
+
+// Search menu items endpoint
+app.get('/api/search', getConnection, async (req, res) => {
+    try {
+        const searchTerm = req.query.term;
+        
+        if (!searchTerm) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Search term is required'
+            });
+        }
+
+        const query = `
+            SELECT menu_id as id, 
+                   item_name as name, 
+                   category, 
+                   price, 
+                   description, 
+                   availability_status, 
+                   image_link as image 
+            FROM menu 
+            WHERE availability_status = 'Available'
+            AND (
+                REGEXP_LIKE(item_name, :1, 'i')
+                OR REGEXP_LIKE(category, :2, 'i')
+                OR REGEXP_LIKE(description, :3, 'i')
+            )
+        `;
+        
+        const result = await req.connection.execute(
+            query,
+            [searchTerm, searchTerm, searchTerm],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        
+        // Format the data to ensure correct case
+        const formattedData = result.rows.map(item => ({
+            id: item.ID,
+            name: item.NAME,
+            category: item.CATEGORY,
+            price: item.PRICE,
+            description: item.DESCRIPTION,
+            availability_status: item.AVAILABILITY_STATUS,
+            image: item.IMAGE
+        }));
+
+        // Close the connection after we're done
+        await req.connection.close();
+        
+        res.json({
+            status: 'success',
+            data: formattedData
+        });
+    } catch (error) {
+        // Make sure to close the connection even if there's an error
+        if (req.connection) {
+            try {
+                await req.connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+        
+        console.error('Error searching menu items:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to search menu items'
+        });
+    }
+});
+
+// Get feedback for an order
+app.get('/api/feedback/:orderId', [authenticateToken, getConnection], async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const orderId = req.params.orderId;
+        const customerId = req.user.customer_id;
+
+        // Verify the order belongs to the customer
+        const orderCheck = await connection.execute(
+            'SELECT * FROM orders WHERE order_id = :1 AND customer_id = :2',
+            [orderId, customerId]
+        );
+
+        if (orderCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Get feedback if it exists
+        const result = await connection.execute(
+            'SELECT * FROM feedback WHERE order_id = :1',
+            [orderId],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(200).json(null); // Return null when no feedback exists
+        }
+
+        const feedback = result.rows[0];
+        res.json({
+            rating_id: feedback.RATING_ID,
+            rating_score: feedback.RATING_SCORE,
+            feedback_text: feedback.FEEDBACK_TEXT
+        });
+    } catch (error) {
+        console.error('Error fetching feedback:', error);
+        res.status(500).json({ error: 'Failed to fetch feedback' });
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+    }
+});
+
+// Submit feedback
+app.post('/api/feedback', [authenticateToken, getConnection], async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const { order_id, rating_score, feedback_text } = req.body;
+        const customerId = req.user.customer_id;
+
+        // Validate input
+        if (!order_id || !rating_score || !feedback_text) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (rating_score < 1 || rating_score > 5) {
+            return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+        }
+
+        if (feedback_text.length > 500) {
+            return res.status(400).json({ error: 'Feedback text must be less than 500 characters' });
+        }
+
+        // Verify the order belongs to the customer
+        const orderCheck = await connection.execute(
+            'SELECT * FROM orders WHERE order_id = :1 AND customer_id = :2',
+            [order_id, customerId]
+        );
+
+        if (orderCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Check if feedback already exists
+        const existingFeedback = await connection.execute(
+            'SELECT * FROM feedback WHERE order_id = :1',
+            [order_id]
+        );
+
+        if (existingFeedback.rows.length > 0) {
+            // Update existing feedback
+            await connection.execute(
+                `UPDATE feedback 
+                 SET rating_score = :1, feedback_text = :2 
+                 WHERE order_id = :3`,
+                [rating_score, feedback_text, order_id]
+            );
+        } else {
+            // Generate new rating_id
+            const maxIdResult = await connection.execute(
+                'SELECT MAX(TO_NUMBER(SUBSTR(rating_id, 2))) as max_id FROM feedback'
+            );
+            const maxId = maxIdResult.rows[0].MAX_ID || 3;
+            const ratingId = `F${String(maxId + 1).padStart(3, '0')}`;
+
+            // Insert new feedback
+            await connection.execute(
+                `INSERT INTO feedback (rating_id, order_id, customer_id, rating_score, feedback_text)
+                 VALUES (:1, :2, :3, :4, :5)`,
+                [ratingId, order_id, customerId, rating_score, feedback_text]
+            );
+        }
+
+        await connection.commit();
+        res.json({ message: 'Feedback submitted successfully' });
+    } catch (error) {
+        console.error('Error submitting feedback:', error);
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error('Error rolling back transaction:', rollbackError);
+            }
+        }
+        res.status(500).json({ error: 'Failed to submit feedback' });
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
             }
         }
     }
