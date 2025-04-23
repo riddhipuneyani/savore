@@ -12,7 +12,115 @@
    <!-- custom css file link  -->
    <link rel="stylesheet" href="css/style.css">
 
-   
+   <style>
+      .orders {
+         padding: 2rem;
+      }
+
+      .orders .title {
+         text-align: center;
+         font-size: 2.5rem;
+         color: #333;
+         margin-bottom: 2rem;
+      }
+
+      .box-container {
+         display: grid;
+         grid-template-columns: repeat(auto-fit, minmax(30rem, 1fr));
+         gap: 1.5rem;
+      }
+
+      .box {
+         background: #fff;
+         border-radius: 8px;
+         padding: 2rem;
+         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      .box p {
+         margin: 1rem 0;
+         font-size: 1.1rem;
+         color: #666;
+         line-height: 1.5;
+      }
+
+      .box p span {
+         color: #333;
+         font-weight: bold;
+      }
+
+      .box .order-status {
+         display: inline-block;
+         padding: 0.5rem 1rem;
+         border-radius: 4px;
+         font-size: 0.9rem;
+         font-weight: bold;
+         margin-top: 1rem;
+      }
+
+      .box .status-pending {
+         background-color: #ffd700;
+         color: #333;
+      }
+
+      .box .status-processing {
+         background-color: #3498db;
+         color: #fff;
+      }
+
+      .box .status-completed {
+         background-color: #2ecc71;
+         color: #fff;
+      }
+
+      .box .status-cancelled {
+         background-color: #e74c3c;
+         color: #fff;
+      }
+
+      .no-orders {
+         text-align: center;
+         padding: 3rem;
+         background: #fff;
+         border-radius: 8px;
+         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      .no-orders p {
+         font-size: 1.5rem;
+         color: #666;
+         margin-bottom: 2rem;
+      }
+
+      .no-orders a {
+         display: inline-block;
+         padding: 0.8rem 2rem;
+         background: #ffd700;
+         color: #333;
+         border-radius: 4px;
+         text-decoration: none;
+         font-size: 1.1rem;
+         transition: all 0.3s ease;
+      }
+
+      .no-orders a:hover {
+         background: #ffc800;
+         transform: translateY(-2px);
+      }
+
+      #loading-spinner {
+         text-align: center;
+         margin: 2rem 0;
+         display: none;
+      }
+
+      .error-message {
+         color: #dc3545;
+         text-align: center;
+         margin: 1rem 0;
+         display: none;
+      }
+   </style>
 </head>
 <body>
    
@@ -66,67 +174,22 @@
    <p><a href="home.html">back to home </a></p>
 </div>
 
+<div id="loading-spinner">Loading your orders...</div>
+<div class="error-message" id="error-message"></div>
+
 <section class="orders">
-
    <h1 class="title">placed orders</h1>
-
-   <div class="box-container">
-
-      <div class="box">
-         <p> placed on : <span>5-29-2022</span> </p>
-         <p> name : <span>shaikh anas</span> </p>
-         <p> number : <span>1234567899</span> </p>
-         <p> email : <span>shaikhanas@gmail.com</span> </p>
-         <p> address : <span>jogeshwari, mumbai, india - 400103</span> </p>
-         <p> your orders : <span>pizza 01 (1) - main dish 02 (3) -</span> </p>
-         <p> total price : <span>$12/-</span> </p>
-         <p> payment method : <span>cash on delivery</span> </p>
-         <p> payment status : <span>pending</span> </p>
-      </div>
-
-      <div class="box">
-         <p> placed on : <span>5-29-2022</span> </p>
-         <p> name : <span>shaikh anas</span> </p>
-         <p> number : <span>1234567899</span> </p>
-         <p> email : <span>shaikhanas@gmail.com</span> </p>
-         <p> address : <span>jogeshwari, mumbai, india - 400103</span> </p>
-         <p> your orders : <span>pizza 01 (1) - main dish 02 (3) -</span> </p>
-         <p> total price : <span>$12/-</span> </p>
-         <p> payment method : <span>cash on delivery</span> </p>
-         <p> payment status : <span>pending</span> </p>
-      </div>
-
+   <div class="box-container" id="orders-container">
+      <!-- Orders will be dynamically loaded here -->
    </div>
-
+   <div class="no-orders" id="no-orders" style="display: none;">
+      <p>You haven't placed any orders yet.</p>
+      <a href="menu.html">Browse Menu</a>
+   </div>
 </section>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <footer class="footer">
-
    <section class="box-container">
-
       <div class="box">
          <img src="images/email-icon.png" alt="">
          <h3>our email</h3>
@@ -154,17 +217,13 @@
          <a href="tel:+919497641978">+91-94976-41978</a>
          <a href="tel:+917032033839">+91-7032033839</a>
       </div>
-
    </section>
-
-    
-
 </footer>
 
 <script src="js/script.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('Orders page loaded');
     
     // Check login status
@@ -174,28 +233,126 @@ document.addEventListener('DOMContentLoaded', function() {
     const guestView = document.getElementById('guest-view');
     const userView = document.getElementById('user-view');
     const usernameSpan = document.getElementById('username');
-    const logoutBtns = document.querySelectorAll('#logout-btn'); // Get all logout buttons
+    const logoutBtns = document.querySelectorAll('#logout-btn, #profile-logout-btn');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const errorMessage = document.getElementById('error-message');
+    const ordersContainer = document.getElementById('orders-container');
+    const noOrdersDiv = document.getElementById('no-orders');
 
-    if (user && token) {
-        // User is logged in
-        guestView.style.display = 'none';
-        userView.style.display = 'flex';
-        usernameSpan.textContent = user.name;
-        
-        // Add logout functionality to all logout buttons
-        logoutBtns.forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault(); // Prevent default action
-                console.log('Logout clicked');
-                localStorage.removeItem('user');
-                localStorage.removeItem('token');
-                window.location.href = 'login.html';
-            });
-        });
-    } else {
+    if (!user || !token) {
         // User is not logged in
         guestView.style.display = 'flex';
         userView.style.display = 'none';
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // User is logged in
+    guestView.style.display = 'none';
+    userView.style.display = 'flex';
+    usernameSpan.textContent = user.name;
+    
+    // Add logout functionality to all logout buttons
+    logoutBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Logout clicked');
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        });
+    });
+
+    // Fetch orders
+    try {
+        loadingSpinner.style.display = 'block';
+        errorMessage.style.display = 'none';
+        
+        const response = await fetch('http://localhost:3000/api/orders', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.status === 401) {
+            // Token is invalid or expired
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch orders');
+        }
+
+        const orders = await response.json();
+        console.log('Orders received:', orders);
+
+        // Hide loading spinner
+        loadingSpinner.style.display = 'none';
+
+        if (orders.length === 0) {
+            // No orders found
+            ordersContainer.style.display = 'none';
+            noOrdersDiv.style.display = 'block';
+            return;
+        }
+
+        // Display orders
+        ordersContainer.style.display = 'grid';
+        noOrdersDiv.style.display = 'none';
+        
+        // Clear existing orders
+        ordersContainer.innerHTML = '';
+        
+        // Add each order to the container
+        orders.forEach(order => {
+            // Format date
+            const orderDate = new Date(order.order_date);
+            const formattedDate = orderDate.toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'numeric',
+                year: 'numeric'
+            });
+            
+            // Format order items
+            const orderItems = order.items.map(item => 
+                `${item.item_name} (${item.quantity})`
+            ).join(', ');
+            
+            // Format status class
+            let statusClass = 'status-pending';
+            if (order.order_status === 'Processing') {
+                statusClass = 'status-processing';
+            } else if (order.order_status === 'Completed') {
+                statusClass = 'status-completed';
+            } else if (order.order_status === 'Cancelled') {
+                statusClass = 'status-cancelled';
+            }
+            
+            const orderElement = document.createElement('div');
+            orderElement.className = 'box';
+            orderElement.innerHTML = `
+                <p> placed on : <span>${formattedDate}</span> </p>
+                <p> name : <span>${user.name}</span> </p>
+                <p> number : <span>${user.phone_number}</span> </p>
+                <p> email : <span>${user.email}</span> </p>
+                <p> address : <span>${user.address}</span> </p>
+                <p> your orders : <span>${orderItems}</span> </p>
+                <p> total price : <span>₹${order.total_price}</span> </p>
+                <p> payment method : <span>cash on delivery</span> </p>
+                <p> payment status : <span class="order-status ${statusClass}">${order.order_status}</span> </p>
+            `;
+            ordersContainer.appendChild(orderElement);
+        });
+
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        loadingSpinner.style.display = 'none';
+        errorMessage.textContent = error.message || 'Failed to load orders. Please try again.';
+        errorMessage.style.display = 'block';
     }
 });
 </script>

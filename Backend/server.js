@@ -240,21 +240,62 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
 });
 
 // Get customer orders endpoint
-app.get('/api/orders', authenticateToken, async (req, res) => {
+app.get('/api/orders', [authenticateToken, getConnection], async (req, res) => {
     try {
-        const customerId = req.user.customerId;
+        const customerId = req.user.customer_id;
         
         const result = await req.connection.execute(
-            `SELECT o.*, m.item_name, m.price 
+            `SELECT o.order_id, o.customer_id, o.order_date, o.order_status, o.total_price,
+                    m.item_name, i.quantity, i.price as item_price
              FROM orders o 
-             JOIN menu m ON o.menu_id = m.menu_id 
+             JOIN items i ON o.item_id = i.item_id
+             JOIN menu m ON i.menu_id = m.menu_id
              WHERE o.customer_id = :1 
-             ORDER BY o.order_date DESC`,
-            [customerId]
+             ORDER BY o.order_date DESC, o.order_id`,
+            [customerId],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
         
-        res.json(result.rows);
+        // Group orders by order_id
+        const ordersMap = new Map();
+        
+        result.rows.forEach(row => {
+            const orderId = row.ORDER_ID;
+            if (!ordersMap.has(orderId)) {
+                ordersMap.set(orderId, {
+                    order_id: orderId,
+                    customer_id: row.CUSTOMER_ID,
+                    order_date: row.ORDER_DATE,
+                    order_status: row.ORDER_STATUS,
+                    total_price: row.TOTAL_PRICE,
+                    items: []
+                });
+            }
+            
+            ordersMap.get(orderId).items.push({
+                item_name: row.ITEM_NAME,
+                quantity: row.QUANTITY,
+                price: row.ITEM_PRICE
+            });
+        });
+
+        // Convert map to array
+        const formattedOrders = Array.from(ordersMap.values());
+
+        // Close the connection after we're done
+        await req.connection.close();
+        
+        res.json(formattedOrders);
     } catch (err) {
+        // Make sure to close the connection even if there's an error
+        if (req.connection) {
+            try {
+                await req.connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+        
         console.error('Error fetching orders:', err);
         res.status(500).json({ error: 'Failed to fetch orders' });
     }

@@ -267,6 +267,8 @@
          }
       } finally {
          loadingSpinner.style.display = 'none';
+         errorMessage.textContent = error.message || 'Failed to load profile data';
+         errorMessage.style.display = 'block';
       }
    });
 
