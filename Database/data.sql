@@ -52,23 +52,23 @@ INSERT INTO customer (customer_id, name, phone_number, email, address, password)
 
 
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
-('M001', 'Veggie Delight Pizza', 'Veg Main Course', 199, 'Loaded veggie pizza', 'Available','paste_image_link_here');
+('M001', 'Veggie Delight Pizza', 'Veg Main Course', 199, 'Loaded veggie pizza', 'Available','uploaded_img/pizza-1.png');
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
-('M002', 'Alfredo Pasta', 'Veg Main Course', 250, 'Creamy white sauce pasta', 'Available','paste_image_link_here');
+('M002', 'Alfredo Pasta', 'Veg Main Course', 250, 'Creamy white sauce pasta', 'Available','images/alfredo pasta.webp');
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
-('M003', 'Cheese Hamburger', 'Veg Main Course', 150, 'Juicy burger with cheese', 'Available','paste_image_link_here');
+('M003', 'Cheese Hamburger', 'Veg Main Course', 150, 'Juicy burger with cheese', 'Available','uploaded_img/burger-1.png');
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
-('M004', 'Tiramisu', 'Desserts', 200, 'Italian coffee-flavored dessert', 'Available','paste_image_link_here');
+('M004', 'Tiramisu', 'Desserts', 200, 'Italian coffee-flavored dessert', 'Available','images/tiramisu.jpeg');
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
-('M005', 'Classic Cold Coffee', 'Drinks', 99, 'Chilled coffee with cream', 'Available','paste_image_link_here');
+('M005', 'Classic Cold Coffee', 'Drinks', 99, 'Chilled coffee with cream', 'Available','images/cold coffee.jpg');
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
-('M006', 'Fresh Lime Soda', 'Drinks', 40, 'Refreshing lemon soda', 'Available','paste_image_link_here');
+('M006', 'Fresh Lime Soda', 'Drinks', 40, 'Refreshing lemon soda', 'Available','images/fresh lime soda.jpeg');
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
-('M007', 'Spicy Chicken Wings', 'Non-Veg Starter', 100, 'Crispy spicy wings', 'Available','paste_image_link_here');
+('M007', 'Spicy Chicken Wings', 'Non-Veg Starter', 100, 'Crispy spicy wings', 'Available','images/chicken wings.webp');
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
-('M008', 'Paneer Tikka', 'Veg Starter', 90, 'Grilled spiced paneer', 'Available','paste_image_link_here');
+('M008', 'Paneer Tikka', 'Veg Starter', 90, 'Grilled spiced paneer', 'Available','images/paneer tikka final 2.jpg');
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
-('M009', 'Gulab Jamun', 'Desserts', 79, 'Sweet-sugary fried balls', 'Available','paste_image_link_here');
+('M009', 'Gulab Jamun', 'Desserts', 79, 'Sweet-sugary fried balls', 'Available','images/gulab jamun.avif');
 
 
 INSERT INTO items (item_id, menu_id, quantity) 
