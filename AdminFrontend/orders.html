@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savore Admin - Order Management</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../Frontend/images/savore_logo_new.png" alt="Savore Logo" class="admin-logo">
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="admin-dashboard.html">
+                        <i class="fas fa-home"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="menu_management.html">
+                        <i class="fas fa-utensils"></i>
+                        Menu Management
+                    </a>
+                </li>
+                <li>
+                    <a href="orders.html" class="active">
+                        <i class="fas fa-shopping-cart"></i>
+                        Orders
+                    </a>
+                </li>
+                <li>
+                    <a href="customers.html">
+                        <i class="fas fa-users"></i>
+                        Customers
+                    </a>
+                </li>
+                <li>
+                    <a href="analytics.html">
+                        <i class="fas fa-chart-bar"></i>
+                        Analytics
+                    </a>
+                </li>
+                <li>
+                    <a href="settings.html">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                </li>
+                <li>
+                    <a href="admin-login.html" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <header class="dashboard-header">
+                <h1 class="dashboard-title">Order Management</h1>
+                <div class="user-profile">
+                    <img src="../Frontend/images/user-icon.png" alt="Admin Profile">
+                    <span>Admin</span>
+                </div>
+            </header>
+
+            <div class="orders-management-container">
+                <!-- Search and Filter Section -->
+                <div class="search-filter-section">
+                    <div class="search-box">
+                        <input type="text" id="searchOrder" placeholder="Search orders...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="filter-options">
+                        <select id="filterStatus">
+                            <option value="">All Orders</option>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Orders Table -->
+                <div class="orders-section">
+                    <div class="table-container">
+                        <table id="ordersTable">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Sample order data -->
+                                <tr>
+                                    <td>#ORD001</td>
+                                    <td>John Doe</td>
+                                    <td>
+                                        <button class="view-items-btn" onclick="viewOrderItems('ORD001')">
+                                            View Items (3)
+                                        </button>
+                                    </td>
+                                    <td>₹1,250</td>
+                                    <td><span class="status pending">Pending</span></td>
+                                    <td>2024-03-20</td>
+                                    <td>
+                                        <button class="action-btn process" onclick="updateOrderStatus('ORD001')">
+                                            Update Status
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>#ORD002</td>
+                                    <td>Jane Smith</td>
+                                    <td>
+                                        <button class="view-items-btn" onclick="viewOrderItems('ORD002')">
+                                            View Items (2)
+                                        </button>
+                                    </td>
+                                    <td>₹850</td>
+                                    <td><span class="status completed">Completed</span></td>
+                                    <td>2024-03-19</td>
+                                    <td>
+                                        <button class="action-btn process" onclick="updateOrderStatus('ORD002')">
+                                            Update Status
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Order Items Modal -->
+    <div id="orderItemsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Order Items</h2>
+            <div id="orderItemsList"></div>
+        </div>
+    </div>
+
+    <!-- Update Status Modal -->
+    <div id="statusModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Update Order Status</h2>
+            <select id="newStatus">
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+            <button class="action-btn process" onclick="saveOrderStatus()">Save Changes</button>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        document.getElementById('searchOrder').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#ordersTable tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        // Filter functionality
+        document.getElementById('filterStatus').addEventListener('change', function(e) {
+            const status = e.target.value;
+            const rows = document.querySelectorAll('#ordersTable tbody tr');
+            
+            rows.forEach(row => {
+                if (!status) {
+                    row.style.display = '';
+                    return;
+                }
+                
+                const rowStatus = row.querySelector('.status').textContent.toLowerCase();
+                row.style.display = rowStatus === status ? '' : 'none';
+            });
+        });
+
+        // Modal functionality
+        const modals = document.querySelectorAll('.modal');
+        const closeButtons = document.querySelectorAll('.close-modal');
+
+        closeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                modals.forEach(modal => modal.style.display = 'none');
+            });
+        });
+
+        window.addEventListener('click', function(event) {
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+
+        // View order items
+        function viewOrderItems(orderId) {
+            const modal = document.getElementById('orderItemsModal');
+            const itemsList = document.getElementById('orderItemsList');
+            
+            // Sample order items data
+            const orderItems = {
+                'ORD001': [
+                    { name: 'Margherita Pizza', quantity: 1, price: 450 },
+                    { name: 'Garlic Bread', quantity: 2, price: 200 },
+                    { name: 'Coke', quantity: 1, price: 50 }
+                ],
+                'ORD002': [
+                    { name: 'Pepperoni Pizza', quantity: 1, price: 550 },
+                    { name: 'Garlic Bread', quantity: 1, price: 100 }
+                ]
+            };
+
+            let itemsHTML = '<table class="items-table">';
+            itemsHTML += '<tr><th>Item</th><th>Quantity</th><th>Price</th></tr>';
+            
+            orderItems[orderId].forEach(item => {
+                itemsHTML += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.quantity}</td>
+                        <td>₹${item.price}</td>
+                    </tr>
+                `;
+            });
+            
+            itemsHTML += '</table>';
+            itemsList.innerHTML = itemsHTML;
+            modal.style.display = 'block';
+        }
+
+        // Update order status
+        let currentOrderId = null;
+
+        function updateOrderStatus(orderId) {
+            currentOrderId = orderId;
+            const modal = document.getElementById('statusModal');
+            modal.style.display = 'block';
+        }
+
+        function saveOrderStatus() {
+            const newStatus = document.getElementById('newStatus').value;
+            const statusElement = document.querySelector(`tr[data-order-id="${currentOrderId}"] .status`);
+            
+            if (statusElement) {
+                statusElement.className = 'status ' + newStatus;
+                statusElement.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+            }
+            
+            document.getElementById('statusModal').style.display = 'none';
+            alert('Order status updated successfully!');
+        }
+    </script>
+</body>
+</html>

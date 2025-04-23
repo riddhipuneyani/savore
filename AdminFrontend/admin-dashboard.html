@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savore Admin Dashboard</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../Frontend/images/savore_logo_new.png" alt="Savore Logo" class="admin-logo">
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="admin-dashboard.html" class="active">
+                        <i class="fas fa-home"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="menu_management.html">
+                        <i class="fas fa-utensils"></i>
+                        Menu Management
+                    </a>
+                </li>
+                <li>
+                    <a href="orders.html">
+                        <i class="fas fa-shopping-cart"></i>
+                        Orders
+                    </a>
+                </li>
+                <li>
+                    <a href="customers.html">
+                        <i class="fas fa-users"></i>
+                        Customers
+                    </a>
+                </li>
+                <li>
+                    <a href="analytics.html">
+                        <i class="fas fa-chart-bar"></i>
+                        Analytics
+                    </a>
+                </li>
+                <li>
+                    <a href="settings.html">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <header class="dashboard-header">
+                <h1 class="dashboard-title">Dashboard Overview</h1>
+                <div class="user-profile">
+                    <img src="../Frontend/images/user-icon.png" alt="Admin Profile">
+                    <span>Admin</span>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
+            </header>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3>Total Orders</h3>
+                    <p>1,234</p>
+                    <div class="stat-trend positive">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>12%</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>Active Customers</h3>
+                    <p>567</p>
+                    <div class="stat-trend positive">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>5%</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>Menu Items</h3>
+                    <p>89</p>
+                    <div class="stat-trend">
+                        <i class="fas fa-minus"></i>
+                        <span>0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recent-orders">
+                <h2>Recent Orders</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#1234</td>
+                                <td>John Doe</td>
+                                <td>3 items</td>
+                                <td>$45.99</td>
+                                <td><span class="status pending">Pending</span></td>
+                                <td>
+                                    <button class="action-btn view">View</button>
+                                    <button class="action-btn process">Process</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#1235</td>
+                                <td>Jane Smith</td>
+                                <td>2 items</td>
+                                <td>$32.50</td>
+                                <td><span class="status completed">Completed</span></td>
+                                <td>
+                                    <button class="action-btn view">View</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Add logout functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutBtn = document.getElementById('logoutBtn');
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if(confirm('Are you sure you want to logout?')) {
+                    // Clear any session data if needed
+                    sessionStorage.clear();
+                    localStorage.clear();
+                    // Redirect to login page
+                    window.location.href = 'admin-login.html';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

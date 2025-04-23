@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savore Admin - Menu Management</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../Frontend/images/savore_logo_new.png" alt="Savore Logo" class="admin-logo">
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="admin-dashboard.html">
+                        <i class="fas fa-home"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="menu_management.html" class="active">
+                        <i class="fas fa-utensils"></i>
+                        Menu Management
+                    </a>
+                </li>
+                <li>
+                    <a href="orders.html">
+                        <i class="fas fa-shopping-cart"></i>
+                        Orders
+                    </a>
+                </li>
+                <li>
+                    <a href="customers.html">
+                        <i class="fas fa-users"></i>
+                        Customers
+                    </a>
+                </li>
+                <li>
+                    <a href="analytics.html">
+                        <i class="fas fa-chart-bar"></i>
+                        Analytics
+                    </a>
+                </li>
+                <li>
+                    <a href="settings.html">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                </li>
+                <li>
+                    <a href="admin-login.html" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <header class="dashboard-header">
+                <h1 class="dashboard-title">Menu Management</h1>
+                <div class="user-profile">
+                    <img src="../Frontend/images/user-icon.png" alt="Admin Profile">
+                    <span>Admin</span>
+                </div>
+            </header>
+
+            <div class="menu-management-container">
+                <!-- Add New Item Section -->
+                <div class="add-item-section">
+                    <h2>Add New Menu Item</h2>
+                    <form id="menuForm" class="menu-form">
+                        <div class="form-group">
+                            <input type="text" id="itemName" placeholder="Item Name" required>
+                            <input type="number" id="itemPrice" placeholder="Price (₹)" step="0.01" required>
+                            <select id="itemCategory" required>
+                                <option value="">Select Category</option>
+                                <option value="appetizer">Appetizer</option>
+                                <option value="main-course">Main Course</option>
+                                <option value="dessert">Dessert</option>
+                                <option value="beverage">Beverage</option>
+                            </select>
+                            <button type="submit" class="add-item-btn">
+                                Add Item
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Menu Items Table -->
+                <div class="menu-items-section">
+                    <h2>Current Menu Items</h2>
+                    <div class="table-container">
+                        <table id="menuTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Item Name</th>
+                                    <th>Category</th>
+                                    <th>Price (₹)</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Menu items will be dynamically added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let menuItems = [];
+
+        // DOM Elements
+        const menuForm = document.getElementById("menuForm");
+        const itemName = document.getElementById("itemName");
+        const itemPrice = document.getElementById("itemPrice");
+        const itemCategory = document.getElementById("itemCategory");
+        const menuTableBody = document.querySelector("#menuTable tbody");
+
+        // Event Listeners
+        menuForm.addEventListener("submit", function(e) {
+            e.preventDefault();
+            if (validateForm()) {
+                addMenuItem();
+            }
+        });
+
+        // Functions
+        function validateForm() {
+            if (!itemName.value || !itemPrice.value || !itemCategory.value) {
+                alert("Please fill in all required fields");
+                return false;
+            }
+            return true;
+        }
+
+        function addMenuItem() {
+            const newItem = {
+                name: itemName.value,
+                price: parseFloat(itemPrice.value).toFixed(2),
+                category: itemCategory.value
+            };
+            
+            menuItems.push(newItem);
+            clearForm();
+            renderMenu();
+        }
+
+        function clearForm() {
+            itemName.value = "";
+            itemPrice.value = "";
+            itemCategory.value = "";
+        }
+
+        function renderMenu() {
+            menuTableBody.innerHTML = "";
+            menuItems.forEach((item, index) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><input type="text" value="${item.name}" class="editable-field" data-field="name" data-index="${index}"></td>
+                    <td>
+                        <select class="editable-field" data-field="category" data-index="${index}">
+                            <option value="appetizer" ${item.category === 'appetizer' ? 'selected' : ''}>Appetizer</option>
+                            <option value="main-course" ${item.category === 'main-course' ? 'selected' : ''}>Main Course</option>
+                            <option value="dessert" ${item.category === 'dessert' ? 'selected' : ''}>Dessert</option>
+                            <option value="beverage" ${item.category === 'beverage' ? 'selected' : ''}>Beverage</option>
+                        </select>
+                    </td>
+                    <td><input type="number" value="${item.price}" class="editable-field" data-field="price" data-index="${index}" step="0.01"></td>
+                    <td>
+                        <button class="action-btn process" onclick="updateItem(${index})">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button class="action-btn view" onclick="deleteItem(${index})">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                `;
+                menuTableBody.appendChild(row);
+            });
+        }
+
+        function updateItem(index) {
+            const fields = ['name', 'category', 'price'];
+            fields.forEach(field => {
+                const input = document.querySelector(`.editable-field[data-field="${field}"][data-index="${index}"]`);
+                if (input) {
+                    menuItems[index][field] = field === 'price' ? 
+                        parseFloat(input.value).toFixed(2) : 
+                        input.value;
+                }
+            });
+            renderMenu();
+        }
+
+        function deleteItem(index) {
+            if (confirm("Are you sure you want to delete this item?")) {
+                menuItems.splice(index, 1);
+                renderMenu();
+            }
+        }
+
+        // Initial render
+        renderMenu();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savore Admin - Login</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="logo-container">
+                <img src="../Frontend/images/savore_logo_new.png" alt="Savore Logo" class="admin-logo">
+            </div>
+            <h2>Admin Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <input type="text" id="username" placeholder="Username" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="password" placeholder="Password" required>
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+                <p class="error-message" id="errorMessage"></p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Basic validation
+            if (!username || !password) {
+                errorMessage.textContent = 'Please enter both username and password';
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            // Here you would typically make an API call to verify credentials
+            // For now, we'll use a simple check
+            if (username === 'admin' && password === 'admin123') {
+                // Redirect to dashboard on successful login
+                window.location.href = 'admin-dashboard.html';
+            } else {
+                errorMessage.textContent = 'Invalid username or password';
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html> 
