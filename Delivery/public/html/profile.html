@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile - Savoré Delivery</title>
+    <link rel="stylesheet" href="C:/Users/Yamini Prabha/OneDrive/Desktop/Delivery/public/css/profile.css">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">Savoré Delivery</div>
+        <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="deliveries.html">Deliveries</a></li>
+        </ul>
+    </div>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <img src="C:/Users/Yamini Prabha/OneDrive/Desktop/Delivery/public/assets/savore_yellow.png" alt="Savore Logo" style="width: 150px;height: 80px">
+        <a href="profile.html">
+            <img src="C:/Users/Yamini Prabha/OneDrive/Desktop/Delivery/public/assets/driver.png" alt="Profile" class="profile-icon">
+        </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <div class="profile-card">
+            <h2>My Profile</h2>
+
+            <div class="profile-info">
+                <label>Name:</label>
+                <p id="name">John Doe</p>
+            </div>
+
+            <div class="profile-info">
+                <label for="email">Email:</label>
+                <input type="email" id="email">
+            </div>
+
+            <div class="profile-info">
+                <label for="phone">Phone:</label>
+                <input type="text" id="phone">
+            </div>
+
+            <div class="buttons">
+                <button class="save-btn" onclick="saveProfile()">Save Changes</button><br>
+                <button onclick="openPasswordModal()">Change Password</button>
+                <button onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <h3>Change Password</h3>
+            <input type="password" id="oldPassword" placeholder="Old Password">
+            <input type="password" id="newPassword" placeholder="New Password">
+            <input type="password" id="confirmPassword" placeholder="Confirm New Password">
+            <button onclick="changePassword()">Submit</button>
+        </div>
+    </div>
+
+    <script src="C:/Users/Yamini Prabha/OneDrive/Desktop/Delivery/public/js/profile.js"></script>
+</body>
+</html>

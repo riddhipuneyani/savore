@@ -607,7 +607,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 });
-
+    
 // Checkout Process
 async function initializeCheckout() {
     console.log('Initializing checkout...');
