@@ -215,27 +215,178 @@ app.post('/api/auth/login', getConnection, async (req, res) => {
     }
 });
 
+// Create items endpoint
+app.post('/api/items', authenticateToken, async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const { items } = req.body;
+        
+        // Get the current maximum item ID - using REGEXP_REPLACE to ensure we only get numeric part
+        const result = await connection.execute(
+            `SELECT NVL(MAX(TO_NUMBER(REGEXP_REPLACE(item_id, '[^0-9]', ''))), 0) as max_id FROM items`
+        );
+        const maxId = result.rows[0].MAX_ID;
+        const itemId = `I${String(maxId + 1).padStart(3, '0')}`;
+        
+        // First verify all menu items exist
+        for (const item of items) {
+            const menuResult = await connection.execute(
+                'SELECT menu_id FROM menu WHERE item_name = :1',
+                [item.item_name],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+            
+            if (menuResult.rows.length === 0) {
+                throw new Error(`Menu item not found: ${item.item_name}`);
+            }
+        }
+
+        // Then insert all items in a single transaction
+        for (const item of items) {
+            const menuResult = await connection.execute(
+                'SELECT menu_id FROM menu WHERE item_name = :1',
+                [item.item_name],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+            
+            const menu_id = menuResult.rows[0].MENU_ID;
+            
+            // Check if the item already exists
+            const existingItem = await connection.execute(
+                'SELECT * FROM items WHERE item_id = :1 AND menu_id = :2',
+                [itemId, menu_id],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+            
+            if (existingItem.rows.length > 0) {
+                // Update quantity if item exists
+                await connection.execute(
+                    `UPDATE items SET quantity = quantity + :1 
+                     WHERE item_id = :2 AND menu_id = :3`,
+                    [item.quantity, itemId, menu_id]
+                );
+            } else {
+                // Insert new item if it doesn't exist
+                await connection.execute(
+                    `INSERT INTO items (item_id, menu_id, quantity)
+                     VALUES (:1, :2, :3)`,
+                    [itemId, menu_id, item.quantity]
+                );
+            }
+        }
+        
+        // Commit the transaction
+        await connection.commit();
+        res.json({ item_id: itemId });
+    } catch (err) {
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error('Error rolling back transaction:', rollbackError);
+            }
+        }
+        console.error('Error creating items:', err);
+        res.status(500).json({ error: 'Failed to create items: ' + err.message });
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+    }
+});
+
 // Create order endpoint
 app.post('/api/orders', authenticateToken, async (req, res) => {
+    let connection;
     try {
-        const { menu_id, quantity, total_price } = req.body;
-        const customerId = req.user.customerId;
+        connection = await oracledb.getConnection(dbConfig);
+        const { items, payment_method } = req.body;
+        const customerId = req.user.customer_id;
         
-        // Generate order ID
-        const result = await req.connection.execute('SELECT MAX(TO_NUMBER(SUBSTR(order_id, 2))) as max_id FROM orders');
-        const maxId = result.rows[0].MAX_ID || 0;
+        // First create items
+        const itemsResponse = await fetch('http://localhost:3000/api/items', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${req.headers.authorization.split(' ')[1]}`
+            },
+            body: JSON.stringify({ items })
+        });
+        
+        if (!itemsResponse.ok) {
+            const errorData = await itemsResponse.json();
+            throw new Error(errorData.error || 'Failed to create items');
+        }
+        
+        const { item_id } = await itemsResponse.json();
+        
+        // Calculate total price from items
+        const totalPriceResult = await connection.execute(
+            `SELECT SUM(price) as total_price FROM items WHERE item_id = :1`,
+            [item_id],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        const totalPrice = totalPriceResult.rows[0].TOTAL_PRICE || 0;
+        
+        // Generate order ID - using REGEXP_REPLACE to ensure we only get numeric part
+        const result = await connection.execute(
+            `SELECT NVL(MAX(TO_NUMBER(REGEXP_REPLACE(order_id, '[^0-9]', ''))), 0) as max_id FROM orders`
+        );
+        const maxId = result.rows[0].MAX_ID;
         const orderId = `O${String(maxId + 1).padStart(3, '0')}`;
         
-        // Insert new order
-        await req.connection.execute(
-            'INSERT INTO orders (order_id, customer_id, menu_id, quantity, total_price, order_status) VALUES (:1, :2, :3, :4, :5, :6)',
-            [orderId, customerId, menu_id, quantity, total_price, 'Pending']
+        // Insert new order with total_price
+        await connection.execute(
+            `INSERT INTO orders (order_id, customer_id, item_id, order_status, order_date, total_price)
+             VALUES (:1, :2, :3, :4, SYSDATE, :5)`,
+            [orderId, customerId, item_id, 'Pending', totalPrice]
         );
         
-        res.json({ message: 'Order created successfully', orderId });
+        // Create payment record - using REGEXP_REPLACE to ensure we only get numeric part
+        const paymentResult = await connection.execute(
+            `SELECT NVL(MAX(TO_NUMBER(REGEXP_REPLACE(payment_id, '[^0-9]', ''))), 0) as max_id FROM payment`
+        );
+        const paymentMaxId = paymentResult.rows[0].MAX_ID;
+        const paymentId = `P${String(paymentMaxId + 1).padStart(3, '0')}`;
+        
+        await connection.execute(
+            `INSERT INTO payment (payment_id, order_id, payment_status, payment_method, transaction_date)
+             VALUES (:1, :2, :3, :4, SYSDATE)`,
+            [paymentId, orderId, 'Pending', payment_method]
+        );
+        
+        // Commit the transaction
+        await connection.commit();
+        
+        res.json({ 
+            message: 'Order created successfully',
+            order_id: orderId,
+            item_id: item_id,
+            payment_id: paymentId
+        });
     } catch (err) {
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error('Error rolling back transaction:', rollbackError);
+            }
+        }
         console.error('Error creating order:', err);
-        res.status(500).json({ error: 'Order creation failed' });
+        res.status(500).json({ error: 'Order creation failed: ' + err.message });
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
     }
 });
 
