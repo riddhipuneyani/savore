@@ -29,7 +29,7 @@
     </div>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const username = document.getElementById('username').value;
@@ -43,13 +43,31 @@
                 return;
             }
             
-            // Here you would typically make an API call to verify credentials
-            // For now, we'll use a simple check
-            if (username === 'admin' && password === 'admin123') {
-                // Redirect to dashboard on successful login
-                window.location.href = 'admin-dashboard.html';
-            } else {
-                errorMessage.textContent = 'Invalid username or password';
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store the token in localStorage
+                    localStorage.setItem('adminToken', data.token);
+                    localStorage.setItem('adminData', JSON.stringify(data.admin));
+                    
+                    // Redirect to dashboard on successful login
+                    window.location.href = 'admin-dashboard.html';
+                } else {
+                    errorMessage.textContent = data.error || 'Invalid username or password';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorMessage.textContent = 'An error occurred during login';
                 errorMessage.style.display = 'block';
             }
         });
