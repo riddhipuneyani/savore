@@ -658,6 +658,129 @@ app.get('/api/search', getConnection, async (req, res) => {
     }
 });
 
+// Get feedback for an order
+app.get('/api/feedback/:orderId', [authenticateToken, getConnection], async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+        const customerId = req.user.customer_id;
+
+        // Verify the order belongs to the customer
+        const orderCheck = await req.connection.execute(
+            'SELECT * FROM orders WHERE order_id = :1 AND customer_id = :2',
+            [orderId, customerId]
+        );
+
+        if (orderCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Get feedback if it exists
+        const result = await req.connection.execute(
+            'SELECT * FROM feedback WHERE order_id = :1',
+            [orderId],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'No feedback found' });
+        }
+
+        const feedback = result.rows[0];
+        res.json({
+            rating_id: feedback.RATING_ID,
+            rating_score: feedback.RATING_SCORE,
+            feedback_text: feedback.FEEDBACK_TEXT
+        });
+    } catch (error) {
+        console.error('Error fetching feedback:', error);
+        res.status(500).json({ error: 'Failed to fetch feedback' });
+    }
+});
+
+// Submit feedback
+app.post('/api/feedback', [authenticateToken, getConnection], async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const { order_id, rating_score, feedback_text } = req.body;
+        const customerId = req.user.customer_id;
+
+        // Validate input
+        if (!order_id || !rating_score || !feedback_text) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (rating_score < 1 || rating_score > 5) {
+            return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+        }
+
+        if (feedback_text.length > 500) {
+            return res.status(400).json({ error: 'Feedback text must be less than 500 characters' });
+        }
+
+        // Verify the order belongs to the customer
+        const orderCheck = await connection.execute(
+            'SELECT * FROM orders WHERE order_id = :1 AND customer_id = :2',
+            [order_id, customerId]
+        );
+
+        if (orderCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Check if feedback already exists
+        const existingFeedback = await connection.execute(
+            'SELECT * FROM feedback WHERE order_id = :1',
+            [order_id]
+        );
+
+        if (existingFeedback.rows.length > 0) {
+            // Update existing feedback
+            await connection.execute(
+                `UPDATE feedback 
+                 SET rating_score = :1, feedback_text = :2 
+                 WHERE order_id = :3`,
+                [rating_score, feedback_text, order_id]
+            );
+        } else {
+            // Generate new rating_id
+            const maxIdResult = await connection.execute(
+                'SELECT MAX(TO_NUMBER(SUBSTR(rating_id, 2))) as max_id FROM feedback'
+            );
+            const maxId = maxIdResult.rows[0].MAX_ID || 3;
+            const ratingId = `F${String(maxId + 1).padStart(3, '0')}`;
+
+            // Insert new feedback
+            await connection.execute(
+                `INSERT INTO feedback (rating_id, order_id, customer_id, rating_score, feedback_text)
+                 VALUES (:1, :2, :3, :4, :5)`,
+                [ratingId, order_id, customerId, rating_score, feedback_text]
+            );
+        }
+
+        await connection.commit();
+        res.json({ message: 'Feedback submitted successfully' });
+    } catch (error) {
+        console.error('Error submitting feedback:', error);
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error('Error rolling back transaction:', rollbackError);
+            }
+        }
+        res.status(500).json({ error: 'Failed to submit feedback' });
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+    }
+});
+
 // Initialize the application
 initialize().catch((err) => {
     console.error('Failed to initialize application:', err);
