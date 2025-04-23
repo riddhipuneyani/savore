@@ -56,8 +56,6 @@ CREATE TABLE menu (
     description VARCHAR(500),
     availability_status VARCHAR(20) CHECK (availability_status IN ('Available', 'Not Available')),
     image_link VARCHAR(200)
-    availability_status VARCHAR(20) CHECK (availability_status IN ('Available', 'Not Available')),
-    image_link VARCHAR(100)
 );
 
 --Items Table
@@ -84,6 +82,7 @@ CREATE TABLE orders(
 CREATE TABLE delivery (
     delivery_id VARCHAR(5) PRIMARY KEY,
     employee_id VARCHAR(5) NOT NULL,
+    password VARCHAR(20),
     rating NUMBER(2,1) CHECK (rating >= 1 AND rating <= 5),
     FOREIGN KEY (employee_id) REFERENCES employee(employee_id)
 );
