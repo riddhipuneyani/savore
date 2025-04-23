@@ -4,7 +4,7 @@
    <meta charset="UTF-8">
    <meta http-equiv="X-UA-Compatible" content="IE=edge">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>update profile</title>
+   <title>Update Profile | Savore</title>
    <link rel="icon" type="image/png" href="images/savore_black.png">
    <!-- font awesome cdn link  -->
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
@@ -12,131 +12,346 @@
    <!-- custom css file link  -->
    <link rel="stylesheet" href="css/style.css">
 
+   <style>
+       .update-profile {
+           max-width: 600px;
+           margin: 2rem auto;
+           padding: 2rem;
+           background: #fff;
+           border-radius: 8px;
+           box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+       }
+
+       .update-profile h3 {
+           text-align: center;
+           font-size: 2rem;
+           color: #333;
+           margin-bottom: 2rem;
+       }
+
+       .form-group {
+           margin-bottom: 1.5rem;
+       }
+
+       .form-group label {
+           display: block;
+           margin-bottom: 0.5rem;
+           color: #666;
+           font-size: 1.1rem;
+       }
+
+       .form-group input {
+           width: 100%;
+           padding: 0.8rem;
+           border: 1px solid #ddd;
+           border-radius: 4px;
+           font-size: 1rem;
+       }
+
+       .form-group input:read-only {
+           background-color: #f5f5f5;
+           cursor: not-allowed;
+       }
+
+       .btn-group {
+           display: flex;
+           gap: 1rem;
+           justify-content: center;
+           margin-top: 2rem;
+       }
+
+       .btn {
+           padding: 0.8rem 2rem;
+           border: none;
+           border-radius: 4px;
+           cursor: pointer;
+           font-size: 1rem;
+           transition: all 0.3s ease;
+       }
+
+       .update-btn {
+           background: #ffd700;
+           color: #333;
+       }
+
+       .update-btn:hover {
+           background: #ffc800;
+       }
+
+       .cancel-btn {
+           background: #ff6b6b;
+           color: #fff;
+       }
+
+       .cancel-btn:hover {
+           background: #ff5252;
+       }
+
+       #message-container {
+           position: fixed;
+           top: 50%;
+           left: 50%;
+           transform: translate(-50%, -50%);
+           z-index: 1000;
+           display: none;
+       }
+
+       .alert {
+           padding: 2rem;
+           margin-bottom: 1rem;
+           border-radius: 8px;
+           color: #fff;
+           text-align: center;
+           min-width: 300px;
+           box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+       }
+
+       .alert-success {
+           background-color: #2ecc71;
+       }
+
+       .alert-error {
+           background-color: #e74c3c;
+       }
+
+       .alert button {
+           margin-top: 1rem;
+           padding: 0.5rem 2rem;
+           border: none;
+           border-radius: 4px;
+           background: #fff;
+           color: #333;
+           cursor: pointer;
+           font-size: 1rem;
+           transition: all 0.3s ease;
+       }
+
+       .alert button:hover {
+           background: #f0f0f0;
+       }
+
+       .overlay {
+           position: fixed;
+           top: 0;
+           left: 0;
+           right: 0;
+           bottom: 0;
+           background: rgba(0,0,0,0.5);
+           z-index: 999;
+           display: none;
+       }
+   </style>
 </head>
 <body>
-   
-<header class="header">
+   <div class="overlay"></div>
+   <div id="message-container"></div>
 
-   <section class="flex">
+   <header class="header">
+      <section class="flex">
+         <a href="home.html">
+            <img src="images/savore_yellow.png" alt="Savore Logo" class="logo">
+         </a>
 
-      <a href="#">
-         <img src="images/savore_yellow.png" alt="Savore Logo" class="logo">
-      </a>
+         <nav class="navbar">
+            <a href="home.html">home</a>
+            <a href="about.html">about</a>
+            <a href="menu.html">menu</a>
+            <a href="orders.html">orders</a>
+            <a href="contact.html">contact</a>
+            <a href="profile.html">profile</a>
+            <a href="login.html">login</a>
+            <a href="register.html">register</a>
+            <a href="#" id="logout-btn">logout</a>
+         </nav>
 
-      <nav class="navbar">
-         <a href="home.html">home</a>
-         <a href="about.html">about</a>
-         <a href="menu.html">menu</a>
-         <a href="orders.html">orders</a>
-         <a href="contact.html">contact</a>
-      </nav>
-
-      <div class="icons">
-         <a href="search.html"><i class="fas fa-search"></i></a>
-         <a href="cart.html"><i class="fas fa-shopping-cart"></i><span>(3)</span></a>
-         <div id="user-btn" class="fas fa-user"></div>
-         <div id="menu-btn" class="fas fa-bars"></div>
-      </div>
-
-      <div class="profile">
-         <div id="guest-view">
-            <p class="account"><a href="login.html">Login</a> or <a href="register.html">Register</a></p>
+         <div class="icons">
+            <a href="search.html"><i class="fas fa-search"></i></a>
+            <a href="cart.html"><i class="fas fa-shopping-cart"></i><span>(0)</span></a>
+            <div id="user-btn" class="fas fa-user"></div>
+            <div id="menu-btn" class="fas fa-bars"></div>
          </div>
-      
-         <div id="user-view" style="display: none;">
-            <p class="name" id="username">User Name</p>
+
+         <div class="profile">
+            <p class="name" id="username">Loading...</p>
             <div class="flex">
-               <a href="profile.html" class="btn">Profile</a>
-               <a href="#" class="delete-btn" id="logout-btn">Logout</a>
+               <a href="profile.html" class="btn">profile</a>
+               <a href="#" class="delete-btn" id="logout-btn">logout</a>
             </div>
+            <p class="account"><a href="login.html">login</a> or <a href="register.html">register</a></p>
          </div>
-      </div>
+      </section>
+   </header>
 
-   </section>
-
-</header>
-
-<section class="form-container">
-
-   <form action="" method="POST">
+   <div class="heading">
       <h3>update profile</h3>
-      <input type="text" required maxlength="20" name="name" placeholder="enter your name" class="box" oninput="this.value = this.value.replace(/\s/g, '')" value="shaikh anas">
-      <input type="email" required maxlength="50" name="email" placeholder="enter your email" class="box" oninput="this.value = this.value.replace(/\s/g, '')" value="shaikhanas@gmai.com">
-      <input type="numner" min="0" max="9999999999" onkeypress="if(this.value.length == 10) return false;" placeholder="enter your number" required class="box" name="number" value="1234567890">
-      <input type="password" maxlength="20" name="old_pass" placeholder="enter your old password" class="box" oninput="this.value = this.value.replace(/\s/g, '')">
-      <input type="password" maxlength="20" name="new_pass" placeholder="enter your new password" class="box" oninput="this.value = this.value.replace(/\s/g, '')">
-      <input type="password" maxlength="20" name="confirm_pass" placeholder="confirm your new password" class="box" oninput="this.value = this.value.replace(/\s/g, '')">
-      <input type="submit" value="update now" class="btn" name="submit">
-   </form>
+      <p><a href="home.html">home </a> <span> / update profile</span></p>
+   </div>
 
-</section>
+   <section class="update-profile">
+      <form id="update-profile-form">
+         <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" required>
+         </div>
 
+         <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" readonly>
+         </div>
 
+         <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" required>
+         </div>
 
+         <div class="form-group">
+            <label for="address">Address</label>
+            <input type="text" id="address" name="address" required>
+         </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<footer class="footer">
-
-   <section class="box-container">
-
-      <div class="box">
-         <img src="images/email-icon.png" alt="">
-         <h3>our email</h3>
-         <a href="mailto:riddhi.puneyani@gmail.com">riddhi.puneyani@gmail.com</a>
-         <a href="mailto:riyanoushad2000@gmail.com">riyanoushad2000@gmail.com</a>
-         <a href="mailto:yaminiprabhaclg@gmail.com">yaminiprabhaclg@gmail.com</a>
-      </div>
-
-      <div class="box">
-         <img src="images/clock-icon.png" alt="">
-         <h3>opening hours</h3>
-         <p>00:07am to 00:10pm </p>
-      </div>
-
-      <div class="box">
-         <img src="images/map-icon.png" alt="">
-         <h3>our address</h3>
-         <a href="https://maps.app.goo.gl/cmz35vHzwXUNB4Gt5">Manipal,India - 576104</a>
-      </div>
-
-      <div class="box">
-         <img src="images/phone-icon.png" alt="">
-         <h3>our number</h3>
-         <a href="tel:+919972761453">+91-99727-61453</a>
-         <a href="tel:+919497641978">+91-94976-41978</a>
-         <a href="tel:+917032033839">+91-7032033839</a>
-      </div>
-
+         <div class="btn-group">
+            <button type="submit" class="btn update-btn">Update Profile</button>
+            <a href="profile.html" class="btn cancel-btn">Cancel</a>
+         </div>
+      </form>
    </section>
 
-    
+   <footer class="footer">
+      <section class="box-container">
+         <div class="box">
+            <img src="images/email-icon.png" alt="">
+            <h3>our email</h3>
+            <a href="mailto:riddhi.puneyani@gmail.com">riddhi.puneyani@gmail.com</a>
+            <a href="mailto:riyanoushad2000@gmail.com">riyanoushad2000@gmail.com</a>
+            <a href="mailto:yaminiprabhaclg@gmail.com">yaminiprabhaclg@gmail.com</a>
+         </div>
 
-</footer>
+         <div class="box">
+            <img src="images/clock-icon.png" alt="">
+            <h3>opening hours</h3>
+            <p>00:07am to 00:10pm </p>
+         </div>
 
-<div class="loader">
-   <img src="images/loader.gif" alt="">
-</div>
+         <div class="box">
+            <img src="images/map-icon.png" alt="">
+            <h3>our address</h3>
+            <a href="https://maps.app.goo.gl/cmz35vHzwXUNB4Gt5">Manipal,India - 576104</a>
+         </div>
 
-<script src="js/script.js"></script>
+         <div class="box">
+            <img src="images/phone-icon.png" alt="">
+            <h3>our number</h3>
+            <a href="tel:+919972761453">+91-99727-61453</a>
+            <a href="tel:+919497641978">+91-94976-41978</a>
+            <a href="tel:+917032033839">+91-7032033839</a>
+         </div>
+      </section>
+   </footer>
 
+   <div class="loader">
+      <img src="images/loader.gif" alt="">
+   </div>
+
+   <script src="js/script.js"></script>
+   <script>
+       document.addEventListener('DOMContentLoaded', async function() {
+           const token = localStorage.getItem('token');
+           if (!token) {
+               window.location.href = 'login.html';
+               return;
+           }
+
+           try {
+               // Fetch current profile data
+               const response = await fetch('http://localhost:3000/api/auth/profile', {
+                   headers: {
+                       'Authorization': `Bearer ${token}`
+                   }
+               });
+
+               if (!response.ok) {
+                   throw new Error('Failed to fetch profile data');
+               }
+
+               const data = await response.json();
+               const user = data.user;
+
+               // Fill form with current data
+               document.getElementById('name').value = user.name || '';
+               document.getElementById('email').value = user.email || '';
+               document.getElementById('phone').value = user.phone_number || '';
+               document.getElementById('address').value = user.address || '';
+
+               // Handle form submission
+               document.getElementById('update-profile-form').addEventListener('submit', async function(e) {
+                   e.preventDefault();
+
+                   const updateData = {
+                       name: document.getElementById('name').value.trim(),
+                       email: document.getElementById('email').value.trim(),
+                       phone_number: document.getElementById('phone').value.trim(),
+                       address: document.getElementById('address').value.trim()
+                   };
+
+                   try {
+                       const updateResponse = await fetch('http://localhost:3000/api/auth/profile', {
+                           method: 'PUT',
+                           headers: {
+                               'Authorization': `Bearer ${token}`,
+                               'Content-Type': 'application/json'
+                           },
+                           body: JSON.stringify(updateData)
+                       });
+
+                       const result = await updateResponse.json();
+
+                       if (!updateResponse.ok) {
+                           throw new Error(result.error || 'Failed to update profile');
+                       }
+
+                       // Update local storage with new user data
+                       localStorage.setItem('user', JSON.stringify(result.user));
+
+                       // Show success message
+                       showMessage('Profile updated successfully!', 'success');
+
+                   } catch (error) {
+                       console.error('Update error:', error);
+                       showMessage(error.message || 'Failed to update profile', 'error');
+                   }
+               });
+
+           } catch (error) {
+               console.error('Load error:', error);
+               showMessage(error.message || 'Failed to load profile data', 'error');
+           }
+       });
+
+       function showMessage(message, type) {
+           const container = document.getElementById('message-container');
+           const overlay = document.querySelector('.overlay');
+           const alert = document.createElement('div');
+           alert.className = `alert alert-${type}`;
+           alert.innerHTML = `
+               <div>${message}</div>
+               <button onclick="handleMessageClose('${type}')">OK</button>
+           `;
+           container.appendChild(alert);
+           container.style.display = 'block';
+           overlay.style.display = 'block';
+       }
+
+       function handleMessageClose(type) {
+           const container = document.getElementById('message-container');
+           const overlay = document.querySelector('.overlay');
+           container.style.display = 'none';
+           overlay.style.display = 'none';
+           container.innerHTML = '';
+           
+           if (type === 'success') {
+               window.location.href = 'profile.html';
+           }
+       }
+   </script>
 </body>
 </html>

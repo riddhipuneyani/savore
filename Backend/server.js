@@ -300,7 +300,11 @@ app.get('/api/auth/profile', [authenticateToken, getConnection], async (req, res
         console.log('Fetching profile for customer ID:', customerId);
 
         const result = await req.connection.execute(
-            'SELECT customer_id, name, email, phone_number, address FROM customer WHERE customer_id = :1',
+            `SELECT c.*, 
+                    (SELECT COUNT(*) FROM orders WHERE customer_id = c.customer_id) as total_orders,
+                    (SELECT SUM(total_price) FROM orders WHERE customer_id = c.customer_id) as total_spent
+             FROM customer c 
+             WHERE c.customer_id = :1`,
             [customerId],
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
@@ -316,12 +320,112 @@ app.get('/api/auth/profile', [authenticateToken, getConnection], async (req, res
                 name: user.NAME,
                 email: user.EMAIL,
                 phone_number: user.PHONE_NUMBER,
-                address: user.ADDRESS
+                address: user.ADDRESS,
+                total_orders: user.TOTAL_ORDERS || 0,
+                total_spent: user.TOTAL_SPENT || 0
             }
         });
     } catch (error) {
         console.error('Error fetching profile:', error);
         res.status(500).json({ error: 'Failed to fetch profile data' });
+    }
+});
+
+// Update user profile endpoint
+app.put('/api/auth/profile', [authenticateToken, getConnection], async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const customerId = req.user.customer_id;
+        const { name, email, phone_number, address } = req.body;
+        
+        console.log('Updating profile for customer ID:', customerId);
+        console.log('Update data:', { name, email, phone_number, address });
+        
+        // Validate input
+        if (!name || !email || !phone_number || !address) {
+            return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        // Check if email is already used by another customer
+        const emailCheck = await connection.execute(
+            'SELECT customer_id FROM customer WHERE email = :1 AND customer_id != :2',
+            [email, customerId]
+        );
+        
+        if (emailCheck.rows.length > 0) {
+            return res.status(400).json({ error: 'Email is already in use by another account' });
+        }
+
+        // Check if phone number is already used by another customer
+        const phoneCheck = await connection.execute(
+            'SELECT customer_id FROM customer WHERE phone_number = :1 AND customer_id != :2',
+            [phone_number, customerId]
+        );
+        
+        if (phoneCheck.rows.length > 0) {
+            return res.status(400).json({ error: 'Phone number is already in use by another account' });
+        }
+
+        // Update customer information
+        const updateResult = await connection.execute(
+            `UPDATE customer 
+             SET name = :1, 
+                 email = :2, 
+                 phone_number = :3, 
+                 address = :4 
+             WHERE customer_id = :5`,
+            [name, email, phone_number, address, customerId]
+        );
+
+        if (updateResult.rowsAffected === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Fetch updated user data
+        const updatedUser = await connection.execute(
+            `SELECT c.*, 
+                    (SELECT COUNT(*) FROM orders WHERE customer_id = c.customer_id) as total_orders,
+                    (SELECT SUM(total_price) FROM orders WHERE customer_id = c.customer_id) as total_spent
+             FROM customer c 
+             WHERE c.customer_id = :1`,
+            [customerId],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        // Commit the transaction
+        await connection.commit();
+        
+        res.json({ 
+            message: 'Profile updated successfully',
+            user: {
+                customer_id: updatedUser.rows[0].CUSTOMER_ID,
+                name: updatedUser.rows[0].NAME,
+                email: updatedUser.rows[0].EMAIL,
+                phone_number: updatedUser.rows[0].PHONE_NUMBER,
+                address: updatedUser.rows[0].ADDRESS,
+                total_orders: updatedUser.rows[0].TOTAL_ORDERS || 0,
+                total_spent: updatedUser.rows[0].TOTAL_SPENT || 0
+            }
+        });
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error('Error rolling back transaction:', rollbackError);
+            }
+        }
+        res.status(500).json({ error: 'Failed to update profile' });
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
     }
 });
 

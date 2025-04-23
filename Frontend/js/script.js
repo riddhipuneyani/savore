@@ -790,3 +790,45 @@ async function fetchAndDisplayFeedbacks() {
         console.error('Error fetching feedbacks:', error);
     }
 }
+
+// Function to update navigation based on login status
+function updateNavigation() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = localStorage.getItem('token');
+    
+    const loginLink = document.querySelector('a[href="login.html"]');
+    const registerLink = document.querySelector('a[href="register.html"]');
+    const logoutLink = document.querySelector('#logout-btn');
+    const profileLink = document.querySelector('a[href="profile.html"]');
+    const ordersLink = document.querySelector('a[href="orders.html"]');
+    
+    if (user && token) {
+        // User is logged in
+        if (loginLink) loginLink.style.display = 'none';
+        if (registerLink) registerLink.style.display = 'none';
+        if (logoutLink) {
+            logoutLink.style.display = 'inline-block';
+            logoutLink.onclick = function(e) {
+                e.preventDefault();
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                window.location.href = 'login.html';
+            };
+        }
+        if (profileLink) profileLink.style.display = 'inline-block';
+        if (ordersLink) ordersLink.style.display = 'inline-block';
+    } else {
+        // User is not logged in
+        if (loginLink) loginLink.style.display = 'inline-block';
+        if (registerLink) registerLink.style.display = 'inline-block';
+        if (logoutLink) logoutLink.style.display = 'none';
+        if (profileLink) profileLink.style.display = 'none';
+        if (ordersLink) ordersLink.style.display = 'none';
+    }
+}
+
+// Call updateNavigation when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    updateNavigation();
+    // ... existing DOMContentLoaded code ...
+});
