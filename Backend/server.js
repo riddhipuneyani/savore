@@ -268,28 +268,60 @@ app.get('/api/admin', async (req, res) => {
     }
 });
 
-// Get menu items endpoint
-app.get('/api/menu', async (req, res) => {
+// Get all menu items
+app.get('/api/menu', getConnection, async (req, res) => {
     try {
+        const query = `
+            SELECT menu_id as id, 
+                   item_name as name, 
+                   category, 
+                   price, 
+                   description, 
+                   availability_status, 
+                   image_link as image 
+            FROM menu 
+            WHERE availability_status = 'Available'
+        `;
+        
         const result = await req.connection.execute(
-            'SELECT * FROM menu WHERE availability_status = :1 ORDER BY category, item_name',
-            ['Available']
+            query,
+            [], // no bind params
+            { outFormat: oracledb.OUT_FORMAT_OBJECT } // This will return results as objects
         );
         
-        // Format the response
-        const menuItems = result.rows.map(item => ({
-            menu_id: item.MENU_ID,
-            item_name: item.ITEM_NAME,
+        // Format the data to ensure correct case
+        const formattedData = result.rows.map(item => ({
+            id: item.ID,
+            name: item.NAME,
             category: item.CATEGORY,
             price: item.PRICE,
             description: item.DESCRIPTION,
-            availability_status: item.AVAILABILITY_STATUS
+            availability_status: item.AVAILABILITY_STATUS,
+            image: item.IMAGE
         }));
+
+        // Close the connection after we're done
+        await req.connection.close();
         
-        res.json(menuItems);
-    } catch (err) {
-        console.error('Error fetching menu items:', err);
-        res.status(500).json({ error: 'Failed to fetch menu items' });
+        res.json({
+            status: 'success',
+            data: formattedData
+        });
+    } catch (error) {
+        // Make sure to close the connection even if there's an error
+        if (req.connection) {
+            try {
+                await req.connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+        
+        console.error('Error fetching menu items:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to fetch menu items'
+        });
     }
 });
 

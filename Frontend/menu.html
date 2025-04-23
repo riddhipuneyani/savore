@@ -67,175 +67,10 @@
 </div>
 
 <section class="products">
-
    <h1 class="title">Dishes Available</h1>
-
-   <div class="box-container">
-
-      <div class="box" data-id="pizza-1">
-         <a href="quick_view.html" class="fas fa-eye"></a>
-         <button class="fas fa-shopping-cart" onclick="addToCart({
-            id: 'pizza-1',
-            name: 'Veggie Delight Pizza',
-            price: 199,
-            image: 'uploaded_img/pizza-1.png',
-            category: 'fast food'
-         })"></button>
-         <img src="uploaded_img/pizza-1.png" alt="">
-         <a href="category.html" class="cat">fast food</a>
-         <div class="name">Veggie Delight Pizza</div>
-         <div class="flex">
-            <div class="price"><span>₹</span>199<span>/-</span></div>
-            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
-         </div>
-      </div>
-
-      <div class="box" data-id="pasta-1">
-         <a href="quick_view.html" class="fas fa-eye"></a>
-         <button class="fas fa-shopping-cart" onclick="addToCart({
-            id: 'pasta-1',
-            name: 'Alfredo Pasta',
-            price: 250,
-            image: 'images/alfredo pasta.webp',
-            category: 'dishes'
-         })"></button>
-         <img src="images/alfredo pasta.webp" alt="">
-         <a href="category.html" class="cat">dishes</a>
-         <div class="name">Alfredo Pasta</div>
-         <div class="flex">
-            <div class="price"><span>₹</span>250<span>/-</span></div>
-            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
-         </div>
-      </div>
-
-      <div class="box" data-id="burger-1">
-         <a href="quick_view.html" class="fas fa-eye"></a>
-         <button class="fas fa-shopping-cart" onclick="addToCart({
-            id: 'burger-1',
-            name: 'Cheese Hamburger',
-            price: 150,
-            image: 'uploaded_img/burger-1.png',
-            category: 'fast food'
-         })"></button>
-         <img src="uploaded_img/burger-1.png" alt="">
-         <a href="category.html" class="cat">fast food</a>
-         <div class="name">Cheese Hamburger</div>
-         <div class="flex">
-            <div class="price"><span>₹</span>150<span>/-</span></div>
-            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
-         </div>
-      </div>
-
-      <div class="box" data-id="dessert-1">
-         <a href="quick_view.html" class="fas fa-eye"></a>
-         <button class="fas fa-shopping-cart" onclick="addToCart({
-            id: 'dessert-1',
-            name: 'Tiramisu',
-            price: 200,
-            image: 'images/tiramisu.jpeg',
-            category: 'dessert'
-         })"></button>
-         <img src="images/tiramisu.jpeg" alt="">
-         <a href="category.html" class="cat">dessert</a>
-         <div class="name">Tiramisu</div>
-         <div class="flex">
-            <div class="price"><span>₹</span>200<span>/-</span></div>
-            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
-         </div>
-      </div>
-
-      <div class="box" data-id="drink-1">
-         <a href="quick_view.html" class="fas fa-eye"></a>
-         <button class="fas fa-shopping-cart" onclick="addToCart({
-            id: 'drink-1',
-            name: 'Classic Cold Coffee',
-            price: 99,
-            image: 'images/cold coffee.jpg',
-            category: 'drinks'
-         })"></button>
-         <img src="images/cold coffee.jpg" alt="">
-         <a href="category.html" class="cat">drinks</a>
-         <div class="name">Classic Cold Coffee</div>
-         <div class="flex">
-            <div class="price"><span>₹</span>99<span>/-</span></div>
-            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
-         </div>
-      </div>
-
-      <div class="box" data-id="drink-2">
-         <a href="quick_view.html" class="fas fa-eye"></a>
-         <button class="fas fa-shopping-cart" onclick="addToCart({
-            id: 'drink-2',
-            name: 'Fresh Lime Soda',
-            price: 40,
-            image: 'images/fresh lime soda.jpeg',
-            category: 'drinks'
-         })"></button>
-         <img src="images/fresh lime soda.jpeg" alt="">
-         <a href="category.html" class="cat">drinks</a>
-         <div class="name">Fresh Lime Soda</div>
-         <div class="flex">
-            <div class="price"><span>₹</span>40<span>/-</span></div>
-            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
-         </div>
-      </div>
-
-      <div class="box" data-id="dish-1">
-         <a href="quick_view.html" class="fas fa-eye"></a>
-         <button class="fas fa-shopping-cart" onclick="addToCart({
-            id: 'dish-1',
-            name: 'Spicy Chicken Wings',
-            price: 100,
-            image: 'images/chicken wings.webp',
-            category: 'dishes'
-         })"></button>
-         <img src="images/chicken wings.webp" alt="">
-         <a href="category.html" class="cat">dishes</a>
-         <div class="name">Spicy Chicken Wings</div>
-         <div class="flex">
-            <div class="price"><span>₹</span>100<span>/-</span></div>
-            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
-         </div>
-      </div>
-
-      <div class="box" data-id="dish-2">
-         <a href="quick_view.html" class="fas fa-eye"></a>
-         <button class="fas fa-shopping-cart" onclick="addToCart({
-            id: 'dish-2',
-            name: 'Paneer Tikka',
-            price: 90,
-            image: 'images/paneer tikka final 2.jpg',
-            category: 'dishes'
-         })"></button>
-         <img src="images/paneer tikka final 2.jpg" alt="">
-         <a href="category.html" class="cat">dishes</a>
-         <div class="name">Paneer Tikka</div>
-         <div class="flex">
-            <div class="price"><span>₹</span>90<span>/-</span></div>
-            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
-         </div>
-      </div>
-
-      <div class="box" data-id="dessert-2">
-         <a href="quick_view.html" class="fas fa-eye"></a>
-         <button class="fas fa-shopping-cart" onclick="addToCart({
-            id: 'dessert-2',
-            name: 'Gulab Jamun',
-            price: 79,
-            image: 'images/gulab jamun.avif',
-            category: 'dessert'
-         })"></button>
-         <img src="images/gulab jamun.avif" alt="">
-         <a href="category.html" class="cat">dessert</a>
-         <div class="name">Gulab Jamun</div>
-         <div class="flex">
-            <div class="price"><span>₹</span>79<span>/-</span></div>
-            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
-         </div>
-      </div>
-
+   <div class="box-container" id="menu-container">
+      <!-- Menu items will be dynamically loaded here -->
    </div>
-
 </section>
 
 <footer class="footer">
@@ -307,6 +142,51 @@ document.addEventListener('DOMContentLoaded', function() {
         userView.style.display = 'none';
     }
 });
+
+// Function to load menu items
+async function loadMenuItems() {
+    try {
+        const response = await fetch('http://localhost:3000/api/menu');
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const menuContainer = document.getElementById('menu-container');
+            menuContainer.innerHTML = ''; // Clear existing items
+            
+            data.data.forEach(item => {
+                const menuItem = `
+                    <div class="box" data-id="${item.id}">
+                        <a href="quick_view.html?id=${item.id}" class="fas fa-eye"></a>
+                        <button class="fas fa-shopping-cart" onclick="addToCart({
+                            id: '${item.id}',
+                            name: '${item.name}',
+                            price: ${item.price},
+                            image: '${item.image}',
+                            category: '${item.category}',
+                            description: '${item.description}'
+                        })"></button>
+                        <img src="${item.image}" alt="${item.name}">
+                        <a href="category.html?category=${item.category}" class="cat">${item.category}</a>
+                        <div class="name">${item.name}</div>
+                        <div class="description">${item.description || ''}</div>
+                        <div class="flex">
+                            <div class="price"><span>₹</span>${item.price}<span>/-</span></div>
+                            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
+                        </div>
+                    </div>
+                `;
+                menuContainer.innerHTML += menuItem;
+            });
+        } else {
+            console.error('Failed to load menu items:', data.message);
+        }
+    } catch (error) {
+        console.error('Error loading menu items:', error);
+    }
+}
+
+// Load menu items when the page loads
+document.addEventListener('DOMContentLoaded', loadMenuItems);
 </script>
 
 </body>
