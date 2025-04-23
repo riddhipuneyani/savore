@@ -53,7 +53,8 @@ CREATE TABLE menu (
     category VARCHAR(50) NOT NULL CHECK (category IN ('Veg Starter', 'Non-Veg Starter', 'Veg Main Course', 'Non-Veg Main Course', 'Desserts', 'Drinks', 'International')),
     price NUMBER(10,2) NOT NULL CHECK (price > 0),
     description VARCHAR(500),
-    availability_status VARCHAR(20) CHECK (availability_status IN ('Available', 'Not Available'))
+    availability_status VARCHAR(20) CHECK (availability_status IN ('Available', 'Not Available'),
+    image_link VARCHAR(100))
 );
 
 --Items Table
