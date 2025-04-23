@@ -660,12 +660,14 @@ app.get('/api/search', getConnection, async (req, res) => {
 
 // Get feedback for an order
 app.get('/api/feedback/:orderId', [authenticateToken, getConnection], async (req, res) => {
+    let connection;
     try {
+        connection = await oracledb.getConnection(dbConfig);
         const orderId = req.params.orderId;
         const customerId = req.user.customer_id;
 
         // Verify the order belongs to the customer
-        const orderCheck = await req.connection.execute(
+        const orderCheck = await connection.execute(
             'SELECT * FROM orders WHERE order_id = :1 AND customer_id = :2',
             [orderId, customerId]
         );
@@ -675,14 +677,14 @@ app.get('/api/feedback/:orderId', [authenticateToken, getConnection], async (req
         }
 
         // Get feedback if it exists
-        const result = await req.connection.execute(
+        const result = await connection.execute(
             'SELECT * FROM feedback WHERE order_id = :1',
             [orderId],
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'No feedback found' });
+            return res.status(200).json(null); // Return null when no feedback exists
         }
 
         const feedback = result.rows[0];
@@ -694,6 +696,14 @@ app.get('/api/feedback/:orderId', [authenticateToken, getConnection], async (req
     } catch (error) {
         console.error('Error fetching feedback:', error);
         res.status(500).json({ error: 'Failed to fetch feedback' });
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
     }
 });
 

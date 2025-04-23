@@ -364,6 +364,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     const errorMessage = document.getElementById('error-message');
     const ordersContainer = document.getElementById('orders-container');
     const noOrdersDiv = document.getElementById('no-orders');
+    const feedbackModal = document.getElementById('feedback-modal');
+    const feedbackForm = document.getElementById('feedback-form');
+    const feedbackModalTitle = document.getElementById('feedback-modal-title');
+    const cancelFeedbackBtn = document.getElementById('cancel-feedback');
+    const submitFeedbackBtn = document.getElementById('submit-feedback');
+    let currentOrderId = null;
 
     if (!user || !token) {
         // User is not logged in
@@ -389,36 +395,87 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
-    // Feedback Modal Elements
-    const feedbackModal = document.getElementById('feedback-modal');
-    const feedbackForm = document.getElementById('feedback-form');
-    const feedbackModalTitle = document.getElementById('feedback-modal-title');
-    const cancelFeedbackBtn = document.getElementById('cancel-feedback');
-    const submitFeedbackBtn = document.getElementById('submit-feedback');
-    let currentOrderId = null;
+    // Function to fetch feedback for an order
+    async function fetchFeedback(orderId) {
+        try {
+            const response = await fetch(`http://localhost:3000/api/feedback/${orderId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const feedback = await response.json();
+                return feedback;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching feedback:', error);
+            return null;
+        }
+    }
 
-    // Close modal when clicking cancel
-    cancelFeedbackBtn.addEventListener('click', () => {
+    // Function to handle feedback button click
+    window.handleFeedbackClick = function(button) {
+        const orderId = button.getAttribute('data-order-id');
+        const feedbackData = JSON.parse(button.getAttribute('data-feedback'));
+        
+        console.log('Feedback button clicked for order:', orderId);
+        console.log('Existing feedback:', feedbackData);
+        
+        currentOrderId = orderId;
+        
+        // Update modal title and content
+        feedbackModalTitle.textContent = feedbackData ? 'Edit Feedback' : 'Give Feedback';
+        
+        if (feedbackData) {
+            document.getElementById('rating').value = feedbackData.rating_score;
+            document.getElementById('feedback-text').value = feedbackData.feedback_text;
+        } else {
+            document.getElementById('rating').value = '';
+            document.getElementById('feedback-text').value = '';
+        }
+        
+        // Show the modal
+        feedbackModal.style.display = 'block';
+    };
+
+    // Add event listener for the cancel button
+    cancelFeedbackBtn.addEventListener('click', function() {
         feedbackModal.style.display = 'none';
         feedbackForm.reset();
     });
 
-    // Close modal when clicking outside
-    window.addEventListener('click', (e) => {
-        if (e.target === feedbackModal) {
+    // Add event listener for clicking outside the modal
+    window.addEventListener('click', function(event) {
+        if (event.target === feedbackModal) {
             feedbackModal.style.display = 'none';
             feedbackForm.reset();
         }
     });
 
-    // Handle feedback form submission
-    feedbackForm.addEventListener('submit', async (e) => {
+    // Add event listener for the form submission
+    feedbackForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const rating = document.getElementById('rating').value;
         const feedbackText = document.getElementById('feedback-text').value;
         
+        if (!rating || !feedbackText) {
+            alert('Please fill in all fields');
+            return;
+        }
+
+        if (rating < 1 || rating > 5) {
+            alert('Rating must be between 1 and 5');
+            return;
+        }
+        
         try {
+            console.log('Submitting feedback for order:', currentOrderId);
+            console.log('Rating:', rating);
+            console.log('Feedback text:', feedbackText);
+
             const response = await fetch('http://localhost:3000/api/feedback', {
                 method: 'POST',
                 headers: {
@@ -433,37 +490,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to submit feedback');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to submit feedback');
             }
+
+            const result = await response.json();
+            console.log('Feedback submission successful:', result);
 
             feedbackModal.style.display = 'none';
             feedbackForm.reset();
+            
             // Refresh orders to show updated feedback button
             await fetchOrders();
         } catch (error) {
             console.error('Error submitting feedback:', error);
-            alert('Failed to submit feedback. Please try again.');
+            alert('Failed to submit feedback: ' + error.message);
         }
     });
-
-    // Function to fetch feedback for an order
-    async function fetchFeedback(orderId) {
-        try {
-            const response = await fetch(`http://localhost:3000/api/feedback/${orderId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (response.ok) {
-                return await response.json();
-            }
-            return null;
-        } catch (error) {
-            console.error('Error fetching feedback:', error);
-            return null;
-        }
-    }
 
     // Function to fetch orders
     async function fetchOrders() {
@@ -527,6 +570,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 // Fetch feedback for this order
                 const feedback = await fetchFeedback(order.order_id);
+                console.log('Feedback for order', order.order_id, ':', feedback);
                 
                 const orderElement = document.createElement('div');
                 orderElement.className = 'box';
@@ -543,7 +587,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <p> order status : <span class="order-status ${statusClass}">${order.order_status}</span> </p>
                     <button class="feedback-btn ${feedback ? 'edit-feedback-btn' : ''}" 
                             data-order-id="${order.order_id}"
-                            onclick="handleFeedbackClick('${order.order_id}', ${feedback ? JSON.stringify(feedback) : 'null'})">
+                            data-feedback='${JSON.stringify(feedback || null)}'
+                            onclick="handleFeedbackClick(this)">
                         ${feedback ? 'Edit Feedback' : 'Give Feedback'}
                     </button>
                 `;
@@ -557,22 +602,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             errorMessage.style.display = 'block';
         }
     }
-
-    // Function to handle feedback button click
-    window.handleFeedbackClick = function(orderId, existingFeedback) {
-        currentOrderId = orderId;
-        feedbackModalTitle.textContent = existingFeedback ? 'Edit Feedback' : 'Give Feedback';
-        
-        if (existingFeedback) {
-            document.getElementById('rating').value = existingFeedback.rating_score;
-            document.getElementById('feedback-text').value = existingFeedback.feedback_text;
-        } else {
-            document.getElementById('rating').value = '';
-            document.getElementById('feedback-text').value = '';
-        }
-        
-        feedbackModal.style.display = 'block';
-    };
 
     // Initial fetch of orders
     await fetchOrders();
