@@ -8,9 +8,11 @@ router.post('/login', adminController.login);
 // Protected admin routes
 router.use(adminController.verifyToken);
 
+// Dashboard statistics route
+router.get('/dashboard/stats', adminController.getDashboardStats);
+
 // Add more protected admin routes here
 // Example:
-// router.get('/dashboard', adminController.getDashboardData);
 // router.get('/orders', adminController.getOrders);
 // etc.
 

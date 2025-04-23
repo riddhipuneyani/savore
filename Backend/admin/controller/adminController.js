@@ -79,6 +79,52 @@ const adminController = {
             req.admin = admin;
             next();
         });
+    },
+
+    // Get dashboard statistics
+    getDashboardStats: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            
+            // Get total orders
+            const totalOrdersResult = await connection.execute(
+                'SELECT COUNT(*) as total FROM orders',
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            // Get total customers
+            const totalCustomersResult = await connection.execute(
+                'SELECT COUNT(*) as total FROM customer',
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            // Get total menu items
+            const menuItemsResult = await connection.execute(
+                'SELECT COUNT(*) as total FROM menu',
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            res.json({
+                totalOrders: totalOrdersResult.rows[0].TOTAL,
+                totalCustomers: totalCustomersResult.rows[0].TOTAL,
+                menuItems: menuItemsResult.rows[0].TOTAL
+            });
+        } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+            res.status(500).json({ error: 'Error fetching dashboard statistics' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
     }
 };
 

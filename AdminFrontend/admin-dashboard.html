@@ -71,47 +71,14 @@
                 <div class="stat-card">
                     <h3>Total Orders</h3>
                     <p id="totalOrders">Loading...</p>
-                    <div class="stat-trend positive">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>12%</span>
-                    </div>
                 </div>
                 <div class="stat-card">
-                    <h3>Active Customers</h3>
-                    <p id="activeCustomers">Loading...</p>
-                    <div class="stat-trend positive">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>5%</span>
-                    </div>
+                    <h3>Total Customers</h3>
+                    <p id="totalCustomers">Loading...</p>
                 </div>
                 <div class="stat-card">
                     <h3>Menu Items</h3>
                     <p id="menuItems">Loading...</p>
-                    <div class="stat-trend">
-                        <i class="fas fa-minus"></i>
-                        <span>0%</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="recent-orders">
-                <h2>Recent Orders</h2>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Customer</th>
-                                <th>Items</th>
-                                <th>Total</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ordersTableBody">
-                            <!-- Orders will be populated dynamically -->
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </main>
@@ -144,10 +111,38 @@
                 }
             });
 
-            // TODO: Add functions to fetch and display dashboard data
-            // fetchDashboardData();
-            // fetchRecentOrders();
+            // Fetch and display dashboard statistics
+            fetchDashboardStats();
         });
+
+        async function fetchDashboardStats() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch('http://localhost:3000/api/admin/dashboard/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch dashboard stats');
+                }
+
+                const data = await response.json();
+
+                // Update total orders
+                document.getElementById('totalOrders').textContent = data.totalOrders;
+
+                // Update total customers
+                document.getElementById('totalCustomers').textContent = data.totalCustomers;
+
+                // Update menu items
+                document.getElementById('menuItems').textContent = data.menuItems;
+            } catch (error) {
+                console.error('Error fetching dashboard stats:', error);
+                // You might want to show an error message to the user here
+            }
+        }
     </script>
 </body>
 </html>
