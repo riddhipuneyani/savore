@@ -12,7 +12,220 @@
    <!-- custom css file link  -->
    <link rel="stylesheet" href="css/style.css">
 
-   
+   <style>
+      .orders {
+         padding: 2rem;
+      }
+
+      .orders .title {
+         text-align: center;
+         font-size: 2.5rem;
+         color: #333;
+         margin-bottom: 2rem;
+      }
+
+      .box-container {
+         display: grid;
+         grid-template-columns: repeat(auto-fit, minmax(30rem, 1fr));
+         gap: 1.5rem;
+      }
+
+      .box {
+         background: #fff;
+         border-radius: 8px;
+         padding: 2rem;
+         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      .box p {
+         margin: 1rem 0;
+         font-size: 1.1rem;
+         color: #666;
+         line-height: 1.5;
+      }
+
+      .box p span {
+         color: #333;
+         font-weight: bold;
+      }
+
+      .box .order-status {
+         display: inline-block;
+         padding: 0.5rem 1rem;
+         border-radius: 4px;
+         font-size: 0.9rem;
+         font-weight: bold;
+         margin-top: 1rem;
+      }
+
+      .box .status-pending {
+         background-color: #ffd700;
+         color: #333;
+      }
+
+      .box .status-processing {
+         background-color: #3498db;
+         color: #fff;
+      }
+
+      .box .status-completed {
+         background-color: #2ecc71;
+         color: #fff;
+      }
+
+      .box .status-cancelled {
+         background-color: #e74c3c;
+         color: #fff;
+      }
+
+      .no-orders {
+         text-align: center;
+         padding: 3rem;
+         background: #fff;
+         border-radius: 8px;
+         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      .no-orders p {
+         font-size: 1.5rem;
+         color: #666;
+         margin-bottom: 2rem;
+      }
+
+      .no-orders a {
+         display: inline-block;
+         padding: 0.8rem 2rem;
+         background: #ffd700;
+         color: #333;
+         border-radius: 4px;
+         text-decoration: none;
+         font-size: 1.1rem;
+         transition: all 0.3s ease;
+      }
+
+      .no-orders a:hover {
+         background: #ffc800;
+         transform: translateY(-2px);
+      }
+
+      #loading-spinner {
+         text-align: center;
+         margin: 2rem 0;
+         display: none;
+      }
+
+      .error-message {
+         color: #dc3545;
+         text-align: center;
+         margin: 1rem 0;
+         display: none;
+      }
+
+      /* Feedback Modal Styles */
+      .feedback-modal {
+         display: none;
+         position: fixed;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         background: rgba(0, 0, 0, 0.5);
+         z-index: 1000;
+      }
+
+      .feedback-modal-content {
+         position: relative;
+         background: #fff;
+         width: 90%;
+         max-width: 500px;
+         margin: 50px auto;
+         padding: 20px;
+         border-radius: 8px;
+         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      .feedback-modal h2 {
+         margin-bottom: 20px;
+         color: #333;
+      }
+
+      .rating-input {
+         margin-bottom: 20px;
+      }
+
+      .rating-input label {
+         display: block;
+         margin-bottom: 10px;
+         color: #666;
+      }
+
+      .rating-input input {
+         width: 100%;
+         padding: 8px;
+         border: 1px solid #ddd;
+         border-radius: 4px;
+      }
+
+      .feedback-text {
+         margin-bottom: 20px;
+      }
+
+      .feedback-text label {
+         display: block;
+         margin-bottom: 10px;
+         color: #666;
+      }
+
+      .feedback-text textarea {
+         width: 100%;
+         padding: 8px;
+         border: 1px solid #ddd;
+         border-radius: 4px;
+         min-height: 100px;
+         resize: vertical;
+      }
+
+      .feedback-buttons {
+         display: flex;
+         justify-content: flex-end;
+         gap: 10px;
+      }
+
+      .feedback-buttons button {
+         padding: 8px 16px;
+         border: none;
+         border-radius: 4px;
+         cursor: pointer;
+         font-size: 1rem;
+      }
+
+      .submit-feedback {
+         background: #ffd700;
+         color: #333;
+      }
+
+      .cancel-feedback {
+         background: #dc3545;
+         color: #fff;
+      }
+
+      .feedback-btn {
+         display: inline-block;
+         padding: 8px 16px;
+         background: #ffd700;
+         color: #333;
+         border: none;
+         border-radius: 4px;
+         cursor: pointer;
+         font-size: 1rem;
+         margin-top: 10px;
+      }
+
+      .edit-feedback-btn {
+         background: #3498db;
+         color: #fff;
+      }
+   </style>
 </head>
 <body>
    
@@ -66,67 +279,43 @@
    <p><a href="home.html">back to home </a></p>
 </div>
 
+<div id="loading-spinner">Loading your orders...</div>
+<div class="error-message" id="error-message"></div>
+
 <section class="orders">
-
    <h1 class="title">placed orders</h1>
-
-   <div class="box-container">
-
-      <div class="box">
-         <p> placed on : <span>5-29-2022</span> </p>
-         <p> name : <span>shaikh anas</span> </p>
-         <p> number : <span>1234567899</span> </p>
-         <p> email : <span>shaikhanas@gmail.com</span> </p>
-         <p> address : <span>jogeshwari, mumbai, india - 400103</span> </p>
-         <p> your orders : <span>pizza 01 (1) - main dish 02 (3) -</span> </p>
-         <p> total price : <span>$12/-</span> </p>
-         <p> payment method : <span>cash on delivery</span> </p>
-         <p> payment status : <span>pending</span> </p>
-      </div>
-
-      <div class="box">
-         <p> placed on : <span>5-29-2022</span> </p>
-         <p> name : <span>shaikh anas</span> </p>
-         <p> number : <span>1234567899</span> </p>
-         <p> email : <span>shaikhanas@gmail.com</span> </p>
-         <p> address : <span>jogeshwari, mumbai, india - 400103</span> </p>
-         <p> your orders : <span>pizza 01 (1) - main dish 02 (3) -</span> </p>
-         <p> total price : <span>$12/-</span> </p>
-         <p> payment method : <span>cash on delivery</span> </p>
-         <p> payment status : <span>pending</span> </p>
-      </div>
-
+   <div class="box-container" id="orders-container">
+      <!-- Orders will be dynamically loaded here -->
    </div>
-
+   <div class="no-orders" id="no-orders" style="display: none;">
+      <p>You haven't placed any orders yet.</p>
+      <a href="menu.html">Browse Menu</a>
+   </div>
 </section>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<!-- Feedback Modal -->
+<div class="feedback-modal" id="feedback-modal">
+   <div class="feedback-modal-content">
+      <h2 id="feedback-modal-title">Give Feedback</h2>
+      <form id="feedback-form">
+         <div class="rating-input">
+            <label for="rating">Rating (1-5):</label>
+            <input type="number" id="rating" name="rating" min="1" max="5" step="0.1" required>
+         </div>
+         <div class="feedback-text">
+            <label for="feedback-text">Feedback:</label>
+            <textarea id="feedback-text" name="feedback-text" maxlength="500" required></textarea>
+         </div>
+         <div class="feedback-buttons">
+            <button type="button" class="cancel-feedback" id="cancel-feedback">Cancel</button>
+            <button type="submit" class="submit-feedback" id="submit-feedback">Submit</button>
+         </div>
+      </form>
+   </div>
+</div>
 
 <footer class="footer">
-
    <section class="box-container">
-
       <div class="box">
          <img src="images/email-icon.png" alt="">
          <h3>our email</h3>
@@ -154,45 +343,268 @@
          <a href="tel:+919497641978">+91-94976-41978</a>
          <a href="tel:+917032033839">+91-7032033839</a>
       </div>
-
    </section>
-
-    
-
 </footer>
 
 <script src="js/script.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Check login status when page loads
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('Orders page loaded');
+    
+    // Check login status
     const user = JSON.parse(localStorage.getItem('user'));
     const token = localStorage.getItem('token');
     
     const guestView = document.getElementById('guest-view');
     const userView = document.getElementById('user-view');
     const usernameSpan = document.getElementById('username');
-    const logoutBtn = document.getElementById('logout-btn');
+    const logoutBtns = document.querySelectorAll('#logout-btn, #profile-logout-btn');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const errorMessage = document.getElementById('error-message');
+    const ordersContainer = document.getElementById('orders-container');
+    const noOrdersDiv = document.getElementById('no-orders');
+    const feedbackModal = document.getElementById('feedback-modal');
+    const feedbackForm = document.getElementById('feedback-form');
+    const feedbackModalTitle = document.getElementById('feedback-modal-title');
+    const cancelFeedbackBtn = document.getElementById('cancel-feedback');
+    const submitFeedbackBtn = document.getElementById('submit-feedback');
+    let currentOrderId = null;
 
-    if (user && token) {
-        // User is logged in
-        guestView.style.display = 'none';
-        userView.style.display = 'flex';
-        usernameSpan.textContent = user.name;
-        
-        // Add logout functionality
-        logoutBtn.addEventListener('click', function() {
+    if (!user || !token) {
+        // User is not logged in
+        guestView.style.display = 'flex';
+        userView.style.display = 'none';
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // User is logged in
+    guestView.style.display = 'none';
+    userView.style.display = 'flex';
+    usernameSpan.textContent = user.name;
+    
+    // Add logout functionality to all logout buttons
+    logoutBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Logout clicked');
             localStorage.removeItem('user');
             localStorage.removeItem('token');
             window.location.href = 'login.html';
         });
-    } else {
-        // User is not logged in
-        guestView.style.display = 'flex';
-        userView.style.display = 'none';
-        // Redirect to login if trying to access orders
-        window.location.href = 'login.html';
+    });
+
+    // Function to fetch feedback for an order
+    async function fetchFeedback(orderId) {
+        try {
+            const response = await fetch(`http://localhost:3000/api/feedback/${orderId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const feedback = await response.json();
+                return feedback;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching feedback:', error);
+            return null;
+        }
     }
+
+    // Function to handle feedback button click
+    window.handleFeedbackClick = function(button) {
+        const orderId = button.getAttribute('data-order-id');
+        const feedbackData = JSON.parse(button.getAttribute('data-feedback'));
+        
+        console.log('Feedback button clicked for order:', orderId);
+        console.log('Existing feedback:', feedbackData);
+        
+        currentOrderId = orderId;
+        
+        // Update modal title and content
+        feedbackModalTitle.textContent = feedbackData ? 'Edit Feedback' : 'Give Feedback';
+        
+        if (feedbackData) {
+            document.getElementById('rating').value = feedbackData.rating_score;
+            document.getElementById('feedback-text').value = feedbackData.feedback_text;
+        } else {
+            document.getElementById('rating').value = '';
+            document.getElementById('feedback-text').value = '';
+        }
+        
+        // Show the modal
+        feedbackModal.style.display = 'block';
+    };
+
+    // Add event listener for the cancel button
+    cancelFeedbackBtn.addEventListener('click', function() {
+        feedbackModal.style.display = 'none';
+        feedbackForm.reset();
+    });
+
+    // Add event listener for clicking outside the modal
+    window.addEventListener('click', function(event) {
+        if (event.target === feedbackModal) {
+            feedbackModal.style.display = 'none';
+            feedbackForm.reset();
+        }
+    });
+
+    // Add event listener for the form submission
+    feedbackForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const rating = document.getElementById('rating').value;
+        const feedbackText = document.getElementById('feedback-text').value;
+        
+        if (!rating || !feedbackText) {
+            alert('Please fill in all fields');
+            return;
+        }
+
+        if (rating < 1 || rating > 5) {
+            alert('Rating must be between 1 and 5');
+            return;
+        }
+        
+        try {
+            console.log('Submitting feedback for order:', currentOrderId);
+            console.log('Rating:', rating);
+            console.log('Feedback text:', feedbackText);
+
+            const response = await fetch('http://localhost:3000/api/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    order_id: currentOrderId,
+                    rating_score: parseFloat(rating),
+                    feedback_text: feedbackText
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to submit feedback');
+            }
+
+            const result = await response.json();
+            console.log('Feedback submission successful:', result);
+
+            feedbackModal.style.display = 'none';
+            feedbackForm.reset();
+            
+            // Refresh orders to show updated feedback button
+            await fetchOrders();
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            alert('Failed to submit feedback: ' + error.message);
+        }
+    });
+
+    // Function to fetch orders
+    async function fetchOrders() {
+        try {
+            loadingSpinner.style.display = 'block';
+            errorMessage.style.display = 'none';
+            
+            const response = await fetch('http://localhost:3000/api/orders', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to fetch orders');
+            }
+
+            const orders = await response.json();
+            console.log('Orders received:', orders);
+
+            loadingSpinner.style.display = 'none';
+
+            if (orders.length === 0) {
+                ordersContainer.style.display = 'none';
+                noOrdersDiv.style.display = 'block';
+                return;
+            }
+
+            ordersContainer.style.display = 'grid';
+            noOrdersDiv.style.display = 'none';
+            ordersContainer.innerHTML = '';
+            
+            for (const order of orders) {
+                const orderDate = new Date(order.order_date);
+                const formattedDate = orderDate.toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'numeric',
+                    year: 'numeric'
+                });
+                
+                const orderItems = order.items.map(item => 
+                    `${item.item_name} (${item.quantity})`
+                ).join(', ');
+                
+                let statusClass = 'status-pending';
+                if (order.order_status === 'Processing') {
+                    statusClass = 'status-processing';
+                } else if (order.order_status === 'Completed') {
+                    statusClass = 'status-completed';
+                } else if (order.order_status === 'Cancelled') {
+                    statusClass = 'status-cancelled';
+                }
+
+                // Fetch feedback for this order
+                const feedback = await fetchFeedback(order.order_id);
+                console.log('Feedback for order', order.order_id, ':', feedback);
+                
+                const orderElement = document.createElement('div');
+                orderElement.className = 'box';
+                orderElement.innerHTML = `
+                    <p> placed on : <span>${formattedDate}</span> </p>
+                    <p> name : <span>${user.name}</span> </p>
+                    <p> number : <span>${user.phone_number}</span> </p>
+                    <p> email : <span>${user.email}</span> </p>
+                    <p> address : <span>${user.address}</span> </p>
+                    <p> your orders : <span>${orderItems}</span> </p>
+                    <p> total price : <span>₹${order.total_price}</span> </p>
+                    <p> payment method : <span>${order.payment_method}</span> </p>
+                    <p> payment status : <span>${order.payment_status}</span> </p>
+                    <p> order status : <span class="order-status ${statusClass}">${order.order_status}</span> </p>
+                    <button class="feedback-btn ${feedback ? 'edit-feedback-btn' : ''}" 
+                            data-order-id="${order.order_id}"
+                            data-feedback='${JSON.stringify(feedback || null)}'
+                            onclick="handleFeedbackClick(this)">
+                        ${feedback ? 'Edit Feedback' : 'Give Feedback'}
+                    </button>
+                `;
+                ordersContainer.appendChild(orderElement);
+            }
+
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+            loadingSpinner.style.display = 'none';
+            errorMessage.textContent = error.message || 'Failed to load orders. Please try again.';
+            errorMessage.style.display = 'block';
+        }
+    }
+
+    // Initial fetch of orders
+    await fetchOrders();
 });
 </script>
 

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Savoré Delivery Dashboard</title>
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">Savoré Delivery</div>
+    <ul class="menu">
+      <li><a href="dashboard.html" style="text-decoration: none; color: rgb(0, 0, 0);">Dashboard</a></li>
+      <li><a href="deliveries.html" style="text-decoration: none; color: rgb(0, 0, 0);">Deliveries</a></li>
+    </ul>
+  </div>
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="left">
+      <img src="../assets/savore_yellow.png" alt="Savoré Delivery Logo" class="topbar-logo" id="driver-logo">
+    </div>
+    <div class="profile-section">
+        <a href="profile.html">
+      <img src="../assets/driver.png" alt="Driver Avatar" class="profile-avatar">
+    </a>
+      <span class="profile-name">John Doe</span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="content-area">
+      <div class="map-section">
+        <!-- Create a map div that Leaflet will use -->
+        <div id="map"></div>
+      </div>
+      <div class="bookings-section">
+        <div class="booking-filters">
+          <button id="btn-all">All</button>
+          <button id="btn-pending">Pending</button>
+          <button id="btn-scheduled">Scheduled</button>
+        </div>
+        <div class="booking-card">
+          <div>Order ID: 123</div>
+          <div>Status: Pending</div>
+          <div>Pickup: Location</div>
+          <div>Drop: Location</div>
+        </div>
+        <!-- More booking cards can go here -->
+      </div>
+    </div>
+  </main>
+
+  <script src="../js/dashboard.js"></script>
+  <!-- Leaflet.js Script -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+</body>
+</html>

@@ -12,6 +12,7 @@ drop table admin;
 BEGIN
     EXECUTE IMMEDIATE 'DROP TRIGGER update_item_price';
     EXECUTE IMMEDIATE 'DROP TRIGGER update_total_price_on_order';
+    --EXECUTE IMMEDIATE 'DROP TRIGGER update_total_price_on_changing_items';
     EXECUTE IMMEDIATE 'DROP TRIGGER update_payment_amount';
 EXCEPTION
     WHEN OTHERS THEN
@@ -81,6 +82,7 @@ CREATE TABLE orders(
 CREATE TABLE delivery (
     delivery_id VARCHAR(5) PRIMARY KEY,
     employee_id VARCHAR(5) NOT NULL,
+    password VARCHAR(20),
     rating NUMBER(2,1) CHECK (rating >= 1 AND rating <= 5),
     FOREIGN KEY (employee_id) REFERENCES employee(employee_id)
 );
@@ -140,7 +142,7 @@ END;
 
 
 CREATE OR REPLACE TRIGGER update_total_price_on_order
-BEFORE INSERT OR UPDATE ON orders
+BEFORE INSERT OR UPDATE ON orders 
 FOR EACH ROW
 DECLARE
     total NUMBER;

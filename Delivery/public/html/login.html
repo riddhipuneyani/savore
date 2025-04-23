@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login | Savore</title>
+    <link rel="stylesheet" href="../css/login.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="login-box">
+        <img src="../assets/savore_yellow.png" alt="Savore Logo" class="logo">
+        <h1>Login</h1>
+        <form id="loginForm">
+            <!-- Delivery ID input -->
+            <input type="text" id="deliveryId" placeholder="Delivery ID" required>
+
+            <!-- Password input with toggle -->
+            <div class="password-container">
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <span class="toggle-password" onclick="togglePassword('loginPassword', this)">👁️</span>
+            </div>
+
+            <!-- Login button -->
+            <button type="submit">Login</button>
+        </form>
+
+        <!-- Links -->
+        <div class="links">
+            <a href="forgot-password.html">Forgot Password?</a> | 
+            <a href="signup.html">Sign Up</a>
+        </div>
+    </div>
+
+    <script src="../js/login.js"></script>
+</body>
+</html>

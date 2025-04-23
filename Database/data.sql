@@ -104,14 +104,14 @@ INSERT INTO orders (order_id, customer_id, item_id, order_status, order_date)
 VALUES ('O007', 'C007', 'I007', 'Processing', TO_DATE('2024-03-31', 'YYYY-MM-DD'));
 
 
-INSERT INTO delivery (delivery_id, employee_id, rating) VALUES
-('D001', 'E004', 4.5);
-INSERT INTO delivery (delivery_id, employee_id, rating) VALUES
-('D002', 'E005', 4.8);
-INSERT INTO delivery (delivery_id, employee_id, rating) VALUES
-('D003', 'E009', 4.6);
-INSERT INTO delivery (delivery_id, employee_id, rating) VALUES
-('D004', 'E010', 4.7);
+INSERT INTO delivery (delivery_id, employee_id, password, rating) VALUES
+('D001', 'E004','pass004', 4.5);
+INSERT INTO delivery (delivery_id, employee_id, password,rating) VALUES
+('D002', 'E005','hello06', 4.8);
+INSERT INTO delivery (delivery_id, employee_id, password, rating) VALUES
+('D003', 'E009', 'Pass88',4.6);
+INSERT INTO delivery (delivery_id, employee_id, password, rating) VALUES
+('D004', 'E010', 'hello05',4.7);
 
 
 INSERT INTO deliveries (delivery_id, order_id, delivery_person_id, delivery_status, delivery_time) VALUES

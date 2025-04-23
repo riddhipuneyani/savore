@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const guestView = document.getElementById('guest-view');
     const userView = document.getElementById('user-view');
     const usernameSpan = document.getElementById('username');
-    const logoutBtn = document.getElementById('logout-btn');
+    const logoutBtns = document.querySelectorAll('#logout-btn'); // Get all logout buttons
 
     if (user && token) {
         // User is logged in
@@ -227,11 +227,15 @@ document.addEventListener('DOMContentLoaded', function() {
         userView.style.display = 'flex';
         usernameSpan.textContent = user.name;
         
-        // Add logout functionality
-        logoutBtn.addEventListener('click', function() {
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-            window.location.href = 'login.html';
+        // Add logout functionality to all logout buttons
+        logoutBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent default action
+                console.log('Logout clicked');
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                window.location.href = 'login.html';
+            });
         });
     } else {
         // User is not logged in

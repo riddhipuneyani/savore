@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile - Savoré Delivery</title>
+    <link rel="stylesheet" href="../css/profile.css">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">Savoré Delivery</div>
+        <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="deliveries.html">Deliveries</a></li>
+        </ul>
+    </div>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <img src="../assets/savore_yellow.png" alt="Savore Logo" style="width: 150px;height: 80px">
+        <a href="profile.html">
+            <img src="../assets/driver.png" alt="Profile" class="profile-icon">
+        </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <div class="profile-card">
+            <h2>My Profile</h2>
+
+            <div class="profile-info">
+                <label>Name:</label>
+                <p id="name">John Doe</p>
+            </div>
+
+            <div class="profile-info">
+                <label>Delivery ID:</label>
+                <p id="deliveryId"></p>
+            </div>
+
+            <div class="profile-info">
+                <label>Phone:</label>
+                <p id="phone"></p>
+            </div>
+
+            <div class="buttons">
+                <button onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/profile.js"></script>
+</body>
+</html>
