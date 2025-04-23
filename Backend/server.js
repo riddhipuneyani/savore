@@ -222,28 +222,33 @@ app.post('/api/items', authenticateToken, async (req, res) => {
         connection = await oracledb.getConnection(dbConfig);
         const { items, item_id } = req.body;
 
-        // First verify all menu items exist
+        if (!item_id) {
+            throw new Error('Missing item_id in request body');
+        }
+
+        // Merge quantities of same item_name
+        const mergedItems = {};
         for (const item of items) {
+            if (mergedItems[item.item_name]) {
+                mergedItems[item.item_name] += item.quantity;
+            } else {
+                mergedItems[item.item_name] = item.quantity;
+            }
+        }
+
+        // Loop over merged items
+        for (const [itemName, totalQuantity] of Object.entries(mergedItems)) {
             const menuResult = await connection.execute(
                 'SELECT menu_id FROM menu WHERE item_name = :1',
-                [item.item_name],
+                [itemName],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
             );
 
             if (menuResult.rows.length === 0) {
-                throw new Error(`Menu item not found: ${item.item_name}`);
+                throw new Error(`Menu item not found: ${itemName}`);
             }
-        }
 
-        // Insert each item
-        for (const item of items) {
-            const menuResult = await connection.execute(
-                'SELECT menu_id FROM menu WHERE item_name = :1',
-                [item.item_name],
-                { outFormat: oracledb.OUT_FORMAT_OBJECT }
-            );
-
-            const menu_id = menuResult.rows[0].MENU_ID; // UPPERCASE key
+            const menu_id = menuResult.rows[0].MENU_ID;
 
             const existingItem = await connection.execute(
                 'SELECT * FROM items WHERE item_id = :1 AND menu_id = :2',
@@ -255,13 +260,13 @@ app.post('/api/items', authenticateToken, async (req, res) => {
                 await connection.execute(
                     `UPDATE items SET quantity = quantity + :1 
                      WHERE item_id = :2 AND menu_id = :3`,
-                    [item.quantity, item_id, menu_id]
+                    [totalQuantity, item_id, menu_id]
                 );
             } else {
                 await connection.execute(
                     `INSERT INTO items (item_id, menu_id, quantity)
                      VALUES (:1, :2, :3)`,
-                    [item_id, menu_id, item.quantity]
+                    [item_id, menu_id, totalQuantity]
                 );
             }
         }
@@ -288,6 +293,7 @@ app.post('/api/items', authenticateToken, async (req, res) => {
         }
     }
 });
+
 
 
 // Create order endpoint
