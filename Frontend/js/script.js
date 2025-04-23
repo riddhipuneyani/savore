@@ -27,11 +27,14 @@ function initializeCart() {
         // Load cart for specific user
         const userCart = JSON.parse(localStorage.getItem(`cart_${user.customer_id}`)) || [];
         cart = userCart;
+        console.log('Cart initialized for user:', user.customer_id, cart);
     } else {
         // Clear cart if no user
         cart = [];
+        console.log('No user found, cart cleared');
     }
     updateCartCount();
+    updateCartDisplay();
 }
 
 // Handle logout function
@@ -369,91 +372,106 @@ function showProfileDropdown() {
 }
 
 function updateCartDisplay() {
-    const cartContainer = document.getElementById('cart-items');
-    const emptyCart = document.getElementById('empty-cart');
-    const cartTotal = document.getElementById('cart-total');
+    console.log('Updating cart display with items:', cart);
+    const cartItemsContainer = document.getElementById('cart-items');
+    const emptyCartDiv = document.getElementById('empty-cart');
     const deleteAllBtn = document.getElementById('delete-all-btn');
+    const cartTotal = document.getElementById('cart-total');
     const checkoutBtn = document.getElementById('checkout-btn');
 
-    if (!cartContainer || !emptyCart) return;
-
-    if (cart.length === 0) {
-        cartContainer.innerHTML = '';
-        emptyCart.style.display = 'block';
-        if (cartTotal) cartTotal.textContent = '₹0';
-        if (deleteAllBtn) deleteAllBtn.style.display = 'none';
-        if (checkoutBtn) checkoutBtn.style.display = 'none';
+    if (!cartItemsContainer || !emptyCartDiv || !deleteAllBtn || !cartTotal || !checkoutBtn) {
+        console.error('Required cart elements not found');
         return;
     }
 
-    emptyCart.style.display = 'none';
-    if (deleteAllBtn) deleteAllBtn.style.display = 'block';
-    if (checkoutBtn) checkoutBtn.style.display = 'inline-block';
+    // Clear existing items
+    cartItemsContainer.innerHTML = '';
+
+    if (cart.length === 0) {
+        cartItemsContainer.style.display = 'none';
+        emptyCartDiv.style.display = 'block';
+        deleteAllBtn.style.display = 'none';
+        cartTotal.textContent = '₹0';
+        checkoutBtn.style.display = 'none';
+        return;
+    }
+
+    // Show cart items
+    cartItemsContainer.style.display = 'grid';
+    emptyCartDiv.style.display = 'none';
+    deleteAllBtn.style.display = 'block';
+    checkoutBtn.style.display = 'inline-block';
 
     // Calculate total
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    if (cartTotal) cartTotal.textContent = `₹${total}`;
+    let total = 0;
 
-    // Create cart items HTML
-    cartContainer.innerHTML = cart.map(item => `
-        <div class="cart-item" data-id="${item.id}">
+    // Add each item to the cart display
+    cart.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        total += itemTotal;
+
+        const itemElement = document.createElement('div');
+        itemElement.className = 'cart-item';
+        itemElement.innerHTML = `
             <button class="remove-btn" onclick="removeFromCart('${item.id}')">
                 <i class="fas fa-times"></i>
             </button>
-            <img src="${item.image || 'images/default-food.jpg'}" alt="${item.name}" onerror="this.src='images/default-food.jpg'">
-            <div class="name">${item.name || 'Unnamed Item'}</div>
-            <div class="price">₹${item.price || 0}</div>
+            <img src="${item.image}" alt="${item.name}">
+            <div class="name">${item.name}</div>
+            <div class="price">₹${item.price}</div>
             <div class="quantity">
-                <label>Quantity:</label>
-                <input type="number" min="1" value="${item.quantity || 1}" 
-                    onchange="updateQuantity('${item.id}', this.value)">
+                <button onclick="updateQuantity('${item.id}', ${item.quantity - 1})">-</button>
+                <input type="number" value="${item.quantity}" min="1" max="99" 
+                       onchange="updateQuantity('${item.id}', this.value)">
+                <button onclick="updateQuantity('${item.id}', ${item.quantity + 1})">+</button>
             </div>
-            <div class="sub-total">Sub Total: <span>₹${(item.price || 0) * (item.quantity || 1)}</span></div>
-        </div>
-    `).join('');
+            <div class="sub-total">sub total : <span>₹${itemTotal}</span></div>
+        `;
+        cartItemsContainer.appendChild(itemElement);
+    });
+
+    // Update total
+    cartTotal.textContent = `₹${total}`;
 }
 
 function removeFromCart(itemId) {
-    if (confirm('Are you sure you want to remove this item from your cart?')) {
-        cart = cart.filter(item => item.id !== itemId);
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (user) {
-            localStorage.setItem(`cart_${user.customer_id}`, JSON.stringify(cart));
-        }
-        updateCartCount();
-        updateCartDisplay();
-    }
+    console.log('Removing item from cart:', itemId);
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+
+    cart = cart.filter(item => item.id !== itemId);
+    localStorage.setItem(`cart_${user.customer_id}`, JSON.stringify(cart));
+    updateCartCount();
+    updateCartDisplay();
 }
 
 function updateQuantity(itemId, newQuantity) {
-    const quantity = parseInt(newQuantity);
-    if (quantity < 1) {
-        alert('Quantity must be at least 1');
-        return;
-    }
+    console.log('Updating quantity for item:', itemId, 'to:', newQuantity);
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+
+    newQuantity = parseInt(newQuantity);
+    if (isNaN(newQuantity) || newQuantity < 1) newQuantity = 1;
+    if (newQuantity > 99) newQuantity = 99;
 
     const item = cart.find(item => item.id === itemId);
     if (item) {
-        item.quantity = quantity;
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (user) {
-            localStorage.setItem(`cart_${user.customer_id}`, JSON.stringify(cart));
-        }
+        item.quantity = newQuantity;
+        localStorage.setItem(`cart_${user.customer_id}`, JSON.stringify(cart));
         updateCartCount();
         updateCartDisplay();
     }
 }
 
 function clearCart() {
-    if (confirm('Clear all items from cart?')) {
-        cart = [];
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (user) {
-            localStorage.setItem(`cart_${user.customer_id}`, JSON.stringify(cart));
-        }
-        updateCartCount();
-        updateCartDisplay();
-    }
+    console.log('Clearing cart');
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+
+    cart = [];
+    localStorage.setItem(`cart_${user.customer_id}`, JSON.stringify(cart));
+    updateCartCount();
+    updateCartDisplay();
 }
 
 window.onscroll = () => {

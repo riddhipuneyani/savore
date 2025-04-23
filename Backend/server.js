@@ -536,6 +536,77 @@ app.get('/api/feedbacks', async (req, res) => {
     }
 });
 
+// Search menu items endpoint
+app.get('/api/search', getConnection, async (req, res) => {
+    try {
+        const searchTerm = req.query.term;
+        
+        if (!searchTerm) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Search term is required'
+            });
+        }
+
+        const query = `
+            SELECT menu_id as id, 
+                   item_name as name, 
+                   category, 
+                   price, 
+                   description, 
+                   availability_status, 
+                   image_link as image 
+            FROM menu 
+            WHERE availability_status = 'Available'
+            AND (
+                REGEXP_LIKE(item_name, :1, 'i')
+                OR REGEXP_LIKE(category, :2, 'i')
+                OR REGEXP_LIKE(description, :3, 'i')
+            )
+        `;
+        
+        const result = await req.connection.execute(
+            query,
+            [searchTerm, searchTerm, searchTerm],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        
+        // Format the data to ensure correct case
+        const formattedData = result.rows.map(item => ({
+            id: item.ID,
+            name: item.NAME,
+            category: item.CATEGORY,
+            price: item.PRICE,
+            description: item.DESCRIPTION,
+            availability_status: item.AVAILABILITY_STATUS,
+            image: item.IMAGE
+        }));
+
+        // Close the connection after we're done
+        await req.connection.close();
+        
+        res.json({
+            status: 'success',
+            data: formattedData
+        });
+    } catch (error) {
+        // Make sure to close the connection even if there's an error
+        if (req.connection) {
+            try {
+                await req.connection.close();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+        
+        console.error('Error searching menu items:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to search menu items'
+        });
+    }
+});
+
 // Initialize the application
 initialize().catch((err) => {
     console.error('Failed to initialize application:', err);

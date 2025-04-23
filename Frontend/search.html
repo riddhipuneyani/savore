@@ -39,7 +39,7 @@
       </nav>
 
       <div class="icons">
-         <a href="search.html"><i class="fas fa-search"></i></a>
+         <a href="search.html" class="active"><i class="fas fa-search"></i></a>
          <a href="cart.html"><i class="fas fa-shopping-cart"></i><span id="cart-count">(0)</span></a>
          <div id="user-btn" class="fas fa-user"></div>
          <div id="menu-btn" class="fas fa-bars"></div>
@@ -62,13 +62,20 @@
 </header>
 
 <section class="search-form">
-   <form action="" method="post">
-      <input type="text" class="box" name="search_box" placeholder="search here..." maxlength="100">
-      <button type="submit" class="fas fa-search" name="search_btn"></button>
+   <form action="" onsubmit="searchProducts(event)">
+      <input type="text" id="search-box" name="search" placeholder="search here..." maxlength="100" class="box" required>
+      <button type="submit" class="fas fa-search"></button>
    </form>
 </section>
 
-<section class="products" style="padding-top: 0; min-height: 100vh;"></section>
+<section class="products" style="padding-top: 0; min-height: 100vh;">
+   <div class="box-container" id="search-results">
+      <!-- Search results will be dynamically loaded here -->
+   </div>
+   <div id="no-results" style="display: none; text-align: center; width: 100%; padding: 2rem;">
+      <p>No products found!</p>
+   </div>
+</section>
 
 <footer class="footer">
    <section class="box-container">
@@ -97,7 +104,7 @@
          <h3>our number</h3>
          <a href="tel:+919972761453">+91-99727-61453</a>
          <a href="tel:+919497641978">+91-94976-41978</a>
-         <a href="tel:+917032033839">+91-7032033839</a>
+         <a href="tel:+917032033839">+91-70320-33839</a>
       </div>
    </section>
 </footer>
@@ -106,8 +113,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Search page loaded');
-    
     // Check login status
     const user = JSON.parse(localStorage.getItem('user'));
     const token = localStorage.getItem('token');
@@ -115,30 +120,76 @@ document.addEventListener('DOMContentLoaded', function() {
     const guestView = document.getElementById('guest-view');
     const userView = document.getElementById('user-view');
     const usernameSpan = document.getElementById('username');
-    const logoutBtns = document.querySelectorAll('#logout-btn'); // Get all logout buttons
+    const logoutBtns = document.querySelectorAll('#logout-btn');
 
     if (user && token) {
-        // User is logged in
         guestView.style.display = 'none';
         userView.style.display = 'flex';
         usernameSpan.textContent = user.name;
         
-        // Add logout functionality to all logout buttons
         logoutBtns.forEach(btn => {
             btn.addEventListener('click', function(e) {
-                e.preventDefault(); // Prevent default action
-                console.log('Logout clicked');
+                e.preventDefault();
                 localStorage.removeItem('user');
                 localStorage.removeItem('token');
                 window.location.href = 'login.html';
             });
         });
     } else {
-        // User is not logged in
         guestView.style.display = 'flex';
         userView.style.display = 'none';
     }
 });
+
+async function searchProducts(event) {
+    event.preventDefault();
+    const searchTerm = document.getElementById('search-box').value.trim();
+    const searchResults = document.getElementById('search-results');
+    const noResults = document.getElementById('no-results');
+    
+    try {
+        const response = await fetch(`http://localhost:3000/api/search?term=${encodeURIComponent(searchTerm)}`);
+        const data = await response.json();
+        
+        searchResults.innerHTML = ''; // Clear previous results
+        
+        if (data.status === 'success' && data.data.length > 0) {
+            noResults.style.display = 'none';
+            searchResults.style.display = 'grid';
+            
+            data.data.forEach(item => {
+                const productBox = `
+                    <div class="box" data-id="${item.id}">
+                        <a href="quick_view.html?id=${item.id}" class="fas fa-eye"></a>
+                        <button class="fas fa-shopping-cart" onclick="addToCart({
+                            id: '${item.id}',
+                            name: '${item.name}',
+                            price: ${item.price},
+                            image: '${item.image}',
+                            category: '${item.category}',
+                            description: '${item.description}'
+                        })"></button>
+                        <img src="${item.image}" alt="${item.name}">
+                        <a href="category.html?category=${item.category}" class="cat">${item.category}</a>
+                        <div class="name">${item.name}</div>
+                        <div class="description">${item.description || ''}</div>
+                        <div class="flex">
+                            <div class="price"><span>₹</span>${item.price}<span>/-</span></div>
+                            <input type="number" class="qty" min="1" max="99" value="1" onkeypress="if(this.value.length == 2) return false;">
+                        </div>
+                    </div>
+                `;
+                searchResults.innerHTML += productBox;
+            });
+        } else {
+            searchResults.style.display = 'none';
+            noResults.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error searching products:', error);
+        searchResults.innerHTML = '<p class="error">An error occurred while searching. Please try again.</p>';
+    }
+}
 </script>
 
 </body>
