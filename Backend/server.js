@@ -364,11 +364,14 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
         const paymentMaxId = paymentResult.rows[0].MAX_ID;
         const paymentId = `P${String(paymentMaxId + 1).padStart(3, '0')}`;
 
+        // Set payment status based on payment method
+        const payment_status = payment_method.toLowerCase() === 'cash' ? 'Pending' : 'Completed';
+
         // Insert payment
         await connection.execute(
             `INSERT INTO payment (payment_id, order_id, payment_status, payment_method, transaction_date)
              VALUES (:1, :2, :3, :4, SYSDATE)`,
-            [paymentId, orderId, 'Pending', payment_method]
+            [paymentId, orderId, payment_status, payment_method]
         );
 
         await connection.commit();
