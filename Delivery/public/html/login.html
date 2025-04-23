@@ -3,33 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <title>Login | Savore</title>
-    <link rel="stylesheet" href="C:/Users/Yamini Prabha/OneDrive/Desktop/Delivery/public/css/login.css">
+    <link rel="stylesheet" href="../css/login.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="login-box">
-        <img src="C:/Users/Yamini Prabha/OneDrive/Desktop/Delivery/public/assets/savore_yellow.png" alt="Savore Logo" class="logo">
+        <img src="../assets/savore_yellow.png" alt="Savore Logo" class="logo">
         <h1>Login</h1>
         <form id="loginForm">
-            <input type="email" placeholder="Email Address" required>
+            <!-- Delivery ID input -->
+            <input type="text" id="deliveryId" placeholder="Delivery ID" required>
+
+            <!-- Password input with toggle -->
             <div class="password-container">
                 <input type="password" id="loginPassword" placeholder="Password" required>
                 <span class="toggle-password" onclick="togglePassword('loginPassword', this)">👁️</span>
             </div>
-            <select id="role" required style="width: 100%; padding: 12px; margin-bottom: 18px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;">
-                <option value="" disabled selected>Select Role</option>
-                <option value="admin">Admin</option>
-                <option value="customer">Customer</option>
-                <option value="delivery">Delivery</option>
-            </select>
+
+            <!-- Login button -->
             <button type="submit">Login</button>
         </form>
+
+        <!-- Links -->
         <div class="links">
             <a href="forgot-password.html">Forgot Password?</a> | 
             <a href="signup.html">Sign Up</a>
         </div>
     </div>
 
-    <script src="C:/Users/Yamini Prabha/OneDrive/Desktop/Delivery/public/js/login.js"></script>
+    <script src="../js/login.js"></script>
 </body>
 </html>
