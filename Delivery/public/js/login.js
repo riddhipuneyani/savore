@@ -37,8 +37,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (response.ok && data.success) {
                 // Store the token and user data in localStorage
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('delivery_token', data.token);
+                localStorage.setItem('delivery_user', JSON.stringify(data.user));
                 
                 showAlert('Login successful!', 'success');
                 
@@ -90,33 +90,9 @@ document.addEventListener('DOMContentLoaded', function() {
     window.togglePassword = togglePassword;
 
     // Check if user is already logged in
-    async function checkLoginStatus() {
-        const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/delivery/verify-token`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    // Token is valid, redirect to dashboard
-                    window.location.href = 'dashboard.html';
-                } else {
-                    // Token is invalid, clear it
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                }
-            } catch (error) {
-                console.error('Token verification error:', error);
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-            }
-        }
+    const token = localStorage.getItem('delivery_token');
+    if (token) {
+        window.location.href = 'dashboard.html';
     }
-
-    // Call the async function
-    checkLoginStatus();
 });
 

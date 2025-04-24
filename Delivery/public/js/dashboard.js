@@ -80,8 +80,8 @@ document.getElementById('btn-scheduled').addEventListener('click', () => {
 // Initialize when the page loads
 document.addEventListener('DOMContentLoaded', async function() {
     // Check if user is logged in
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user'));
+    const token = localStorage.getItem('delivery_token');
+    const user = JSON.parse(localStorage.getItem('delivery_user'));
 
     if (!token || !user) {
         window.location.href = 'login.html';

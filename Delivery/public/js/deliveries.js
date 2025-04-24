@@ -113,8 +113,8 @@ window.updateStatus = async function(deliveryId, orderId, newStatus) {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', async function() {
-    token = localStorage.getItem('token');
-    user = JSON.parse(localStorage.getItem('user'));
+    token = localStorage.getItem('delivery_token');
+    user = JSON.parse(localStorage.getItem('delivery_user'));
 
     if (!token || !user) {
         window.location.href = 'login.html';
