@@ -536,10 +536,11 @@ const adminController = {
                 `SELECT 
                     m.ITEM_NAME,
                     COUNT(o.ORDER_ID) as order_count,
-                    SUM(o.QUANTITY) as total_quantity,
+                    SUM(i.QUANTITY) as total_quantity,
                     SUM(o.TOTAL_PRICE) as total_revenue
                  FROM menu m
-                 JOIN orders o ON m.MENU_ID = o.MENU_ID
+                 JOIN items i ON m.MENU_ID = i.MENU_ID
+                 JOIN orders o ON i.ITEM_ID = o.ITEM_ID
                  GROUP BY m.ITEM_NAME
                  ORDER BY total_revenue DESC
                  FETCH FIRST 5 ROWS ONLY`,
@@ -550,11 +551,11 @@ const adminController = {
             // Get menu categories distribution
             const categoriesResult = await connection.execute(
                 `SELECT 
-                    CATEGORY,
+                    m.CATEGORY,
                     COUNT(*) as item_count,
-                    SUM(PRICE) as total_value
-                 FROM menu
-                 GROUP BY CATEGORY`,
+                    SUM(m.PRICE) as total_value
+                 FROM menu m
+                 GROUP BY m.CATEGORY`,
                 [],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
             );
@@ -1177,7 +1178,56 @@ const adminController = {
                 }
             }
         }
+    },
+
+    // Get order analytics
+    getOrderAnalytics: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            
+            // Get daily order count and revenue
+            const dailyStatsResult = await connection.execute(
+                `SELECT 
+                    TRUNC(o.ORDER_DATE) as order_date,
+                    COUNT(DISTINCT o.ORDER_ID) as order_count,
+                    SUM(o.TOTAL_PRICE) as total_revenue
+                 FROM orders o
+                 GROUP BY TRUNC(o.ORDER_DATE)
+                 ORDER BY order_date DESC
+                 FETCH FIRST 7 ROWS ONLY`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            // Get order status distribution
+            const statusResult = await connection.execute(
+                `SELECT 
+                    o.STATUS,
+                    COUNT(DISTINCT o.ORDER_ID) as count
+                 FROM orders o
+                 GROUP BY o.STATUS`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            res.json({
+                dailyStats: dailyStatsResult.rows,
+                statusDistribution: statusResult.rows
+            });
+        } catch (error) {
+            console.error('Error fetching order analytics:', error);
+            res.status(500).json({ error: 'Error fetching order analytics' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
     }
-    };
+};
 
 module.exports = adminController; 
