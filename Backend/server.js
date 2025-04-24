@@ -1108,6 +1108,71 @@ app.get('/api/delivery/orders', authenticateToken, async (req, res) => {
     }
 });
 
+// Update delivery status endpoint
+app.put('/api/delivery/orders/:orderId/status', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        conn = await oracledb.getConnection();
+        const { status } = req.body;
+        const { orderId } = req.params;
+        const deliveryId = req.user.delivery_id;
+
+        console.log('Updating status:', { orderId, deliveryId, status });
+
+        // First verify the delivery exists and belongs to this delivery person
+        const verifyResult = await conn.execute(
+            `SELECT * FROM deliveries 
+             WHERE order_id = :orderId 
+             AND delivery_person_id = :deliveryId`,
+            [orderId, deliveryId],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        if (verifyResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Order not found or unauthorized' });
+        }
+
+        // Update the delivery status
+        const result = await conn.execute(
+            `UPDATE deliveries 
+             SET delivery_status = :status,
+                 delivery_time = SYSDATE
+             WHERE order_id = :orderId 
+             AND delivery_person_id = :deliveryId`,
+            [status, orderId, deliveryId]
+        );
+
+        // Commit the transaction
+        await conn.commit();
+
+        console.log('Update result:', result);
+
+        if (result.rowsAffected === 0) {
+            return res.status(404).json({ error: 'Failed to update status' });
+        }
+
+        res.json({ message: 'Delivery status updated successfully' });
+    } catch (error) {
+        console.error('Error updating delivery status:', error);
+        if (conn) {
+            try {
+                await conn.rollback();
+            } catch (rollbackError) {
+                console.error('Error rolling back transaction:', rollbackError);
+            }
+        }
+        res.status(500).json({ error: 'Error updating delivery status' });
+    } finally {
+        if (conn) {
+            try {
+                await conn.close();
+            } catch (err) {
+                console.error('Error closing connection:', err);
+            }
+        }
+    }
+});
+
 // Initialize the application
 initialize().catch((err) => {
     console.error('Failed to initialize application:', err);
