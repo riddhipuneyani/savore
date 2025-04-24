@@ -24,10 +24,10 @@
       <img src="../assets/savore_yellow.png" alt="Savoré Delivery Logo" class="topbar-logo" id="driver-logo">
     </div>
     <div class="profile-section">
-        <a href="profile.html">
-      <img src="../assets/driver.png" alt="Driver Avatar" class="profile-avatar">
-    </a>
-      <span class="profile-name">John Doe</span>
+      <a href="profile.html">
+        <img src="../assets/driver.png" alt="Driver Avatar" class="profile-avatar">
+      </a>
+      <span class="profile-name" id="profile-name">Loading...</span>
     </div>
   </div>
 
@@ -44,20 +44,13 @@
           <button id="btn-pending">Pending</button>
           <button id="btn-scheduled">Scheduled</button>
         </div>
-        <div class="booking-card">
-          <div>Order ID: 123</div>
-          <div>Status: Pending</div>
-          <div>Pickup: Location</div>
-          <div>Drop: Location</div>
-        </div>
-        <!-- More booking cards can go here -->
+        <!-- Order cards will be dynamically inserted here -->
       </div>
     </div>
   </main>
 
-  <script src="../js/dashboard.js"></script>
   <!-- Leaflet.js Script -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
+  <script src="../js/dashboard.js"></script>
 </body>
 </html>

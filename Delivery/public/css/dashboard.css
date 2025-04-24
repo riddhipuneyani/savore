@@ -184,3 +184,104 @@ button {
 button:hover {
     background-color: #e0a800; /* Darken on hover */
 }
+
+/* Order Cards Styling */
+.booking-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 10px;
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+}
+
+.booking-card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.booking-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.order-id {
+    font-weight: bold;
+    color: #333;
+}
+
+.order-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.order-status.pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.order-status.out-for-delivery {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.order-status.delivered {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.order-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.order-details div {
+    display: flex;
+    justify-content: space-between;
+}
+
+.order-details strong {
+    color: #666;
+}
+
+/* Filter Buttons */
+.booking-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 10px;
+}
+
+.booking-filters button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.booking-filters button:hover {
+    background-color: #e9ecef;
+}
+
+.booking-filters button.active {
+    background-color: #ffc107;
+    color: #000;
+}

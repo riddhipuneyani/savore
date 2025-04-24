@@ -1018,6 +1018,96 @@ app.post('/api/delivery/login', getConnection, async (req, res) => {
     }
 });
 
+// Delivery Profile endpoint
+app.get('/api/delivery/profile', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        conn = await oracledb.getConnection();
+        
+        // Get employee details using the delivery_id from the token
+        const result = await conn.execute(
+            `SELECT e.name, e.phone_number, e.salary, e.employee_id
+             FROM employee e
+             JOIN delivery d ON e.employee_id = d.employee_id
+             WHERE d.delivery_id = :deliveryId`,
+            [req.user.delivery_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Employee not found' });
+        }
+
+        const employee = {
+            name: result.rows[0][0],
+            phoneNumber: result.rows[0][1],
+            salary: result.rows[0][2],
+            employeeId: result.rows[0][3]
+        };
+
+        res.json(employee);
+    } catch (error) {
+        console.error('Error fetching employee profile:', error);
+        res.status(500).json({ error: 'Error fetching employee profile' });
+    } finally {
+        if (conn) {
+            try {
+                await conn.close();
+            } catch (err) {
+                console.error('Error closing connection:', err);
+            }
+        }
+    }
+});
+
+// Get orders for specific delivery person
+app.get('/api/delivery/orders', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        conn = await oracledb.getConnection();
+        
+        const result = await conn.execute(
+            `SELECT o.order_id, o.customer_id, o.order_date, o.order_status, o.total_price,
+                    c.name as customer_name, c.phone_number as customer_phone, c.address as delivery_address,
+                    d.delivery_status
+             FROM orders o
+             JOIN customer c ON o.customer_id = c.customer_id
+             JOIN deliveries d ON o.order_id = d.order_id
+             WHERE d.delivery_person_id = :deliveryId
+             ORDER BY o.order_date DESC`,
+            [req.user.delivery_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.json([]); // Return empty array if no orders found
+        }
+
+        const orders = result.rows.map(row => ({
+            orderId: row[0],
+            customerId: row[1],
+            orderDate: row[2],
+            orderStatus: row[3],
+            totalPrice: row[4],
+            customerName: row[5],
+            customerPhone: row[6],
+            deliveryAddress: row[7],
+            deliveryStatus: row[8]
+        }));
+
+        res.json(orders);
+    } catch (error) {
+        console.error('Error fetching delivery orders:', error);
+        res.status(500).json({ error: 'Error fetching delivery orders' });
+    } finally {
+        if (conn) {
+            try {
+                await conn.close();
+            } catch (err) {
+                console.error('Error closing connection:', err);
+            }
+        }
+    }
+});
+
 // Initialize the application
 initialize().catch((err) => {
     console.error('Failed to initialize application:', err);

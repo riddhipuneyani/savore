@@ -78,10 +78,171 @@ document.getElementById('btn-scheduled').addEventListener('click', () => {
 });
 
 // Initialize when the page loads
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    if (!token || !user) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    let currentFilter = 'all';
+    let orders = [];
+
+    // Function to fetch employee details
+    async function fetchEmployeeDetails() {
+        try {
+            const response = await fetch('http://localhost:3000/api/delivery/profile', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch employee details');
+            }
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching employee details:', error);
+            return null;
+        }
+    }
+
+    // Function to fetch orders
+    async function fetchOrders() {
+        try {
+            const response = await fetch('http://localhost:3000/api/delivery/orders', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch orders');
+            }
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+            return [];
+        }
+    }
+
+    // Function to update orders display
+    function updateOrdersDisplay() {
+        const bookingsSection = document.querySelector('.bookings-section');
+        let bookingCardsContainer = bookingsSection.querySelector('.booking-cards-container');
+        
+        // Create container if it doesn't exist
+        if (!bookingCardsContainer) {
+            bookingCardsContainer = document.createElement('div');
+            bookingCardsContainer.className = 'booking-cards-container';
+            // Find the filters div and insert container after it
+            const filtersDiv = bookingsSection.querySelector('.booking-filters');
+            filtersDiv.after(bookingCardsContainer);
+        }
+
+        // Clear existing cards
+        bookingCardsContainer.innerHTML = '';
+
+        // Filter orders based on current filter
+        const filteredOrders = orders.filter(order => {
+            if (currentFilter === 'all') return true;
+            if (currentFilter === 'pending') return order.deliveryStatus === 'Out for Delivery';
+            if (currentFilter === 'scheduled') return order.deliveryStatus === 'Delivered';
+            return true;
+        });
+
+        if (filteredOrders.length === 0) {
+            const noOrdersCard = document.createElement('div');
+            noOrdersCard.className = 'booking-card';
+            noOrdersCard.textContent = 'No orders found';
+            bookingCardsContainer.appendChild(noOrdersCard);
+            return;
+        }
+
+        filteredOrders.forEach(order => {
+            const card = document.createElement('div');
+            card.className = 'booking-card';
+            card.innerHTML = `
+                <div class="order-header">
+                    <span class="order-id">Order #${order.orderId}</span>
+                    <span class="order-status ${order.deliveryStatus.toLowerCase().replace(/\s+/g, '-')}">${order.deliveryStatus}</span>
+                </div>
+                <div class="order-details">
+                    <div><strong>Customer:</strong> ${order.customerName}</div>
+                    <div><strong>Phone:</strong> ${order.customerPhone}</div>
+                    <div><strong>Address:</strong> ${order.deliveryAddress}</div>
+                    <div><strong>Total:</strong> ₹${order.totalPrice}</div>
+                    <div><strong>Date:</strong> ${new Date(order.orderDate).toLocaleString()}</div>
+                </div>
+            `;
+            bookingCardsContainer.appendChild(card);
+        });
+    }
+
+    // Update profile name
+    async function updateProfileName() {
+        const profileNameElement = document.getElementById('profile-name');
+        const employeeDetails = await fetchEmployeeDetails();
+
+        if (employeeDetails && employeeDetails.name) {
+            profileNameElement.textContent = employeeDetails.name;
+        } else {
+            profileNameElement.textContent = 'Error loading name';
+        }
+    }
+
+    // Initialize map
+    function initMap() {
+        const map = L.map('map').setView([13.3470, 74.7860], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+    }
+
+    // Initialize everything
     initMap();
-    fetchDeliveries();
-    
-    // Refresh deliveries every 30 seconds
-    setInterval(fetchDeliveries, 30000);
+    updateProfileName();
+
+    // Fetch and display orders
+    orders = await fetchOrders();
+    updateOrdersDisplay();
+
+    // Add event listeners for filter buttons with active state
+    const filterButtons = {
+        'btn-all': 'all',
+        'btn-pending': 'pending',
+        'btn-scheduled': 'scheduled'
+    };
+
+    Object.entries(filterButtons).forEach(([buttonId, filter]) => {
+        const button = document.getElementById(buttonId);
+        button.addEventListener('click', () => {
+            // Remove active class from all buttons
+            document.querySelectorAll('.booking-filters button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            // Add active class to clicked button
+            button.classList.add('active');
+            currentFilter = filter;
+            updateOrdersDisplay();
+        });
+    });
+
+    // Set initial active button
+    document.getElementById('btn-all').classList.add('active');
+
+    // Refresh orders every 30 seconds
+    setInterval(async () => {
+        orders = await fetchOrders();
+        updateOrdersDisplay();
+    }, 30000);
 });
