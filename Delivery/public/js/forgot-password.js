@@ -1,4 +1,4 @@
 document.getElementById("forgotForm").addEventListener("submit", function(e){
     e.preventDefault();
-    Swal.fire('Email Sent!', 'Please check your email for reset instructions.', 'success');
+    Swal.fire('Message Sent!', 'Please check your phone for reset instructions.', 'success');
 });
