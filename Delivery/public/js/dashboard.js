@@ -1,67 +1,87 @@
-const bookings = [
-    { id: 123, status: 'Pending', pickup: 'Manipal University', drop: 'Manipal Hospital', lat: 13.3522, lng: 74.7915 },
-    { id: 124, status: 'Scheduled', pickup: 'Tiger Circle', drop: 'Endpoint Park', lat: 13.3498, lng: 74.7876 },
-    { id: 125, status: 'Pending', pickup: 'Manipal Lake', drop: 'Manipal University', lat: 13.3528, lng: 74.8001 }
-];
-
 let map;
-let markerGroup;
+let markers = [];
+let currentFilter = 'all';
 
+// Initialize the map
 function initMap() {
-    const defaultLocation = [13.3522, 74.7915];
-    map = L.map('map').setView(defaultLocation, 14);
+    // Default to Manipal coordinates
+    map = L.map('map').setView([13.3470, 74.7860], 13);
+    
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
+        attribution: '© OpenStreetMap contributors'
     }).addTo(map);
-    markerGroup = L.layerGroup().addTo(map);
-    renderView('All');
 }
 
-function renderView(status) {
-    renderMarkers(status);
-    renderCards(status);
+// Function to fetch and display deliveries
+async function fetchDeliveries() {
+    try {
+        const response = await fetch('/api/deliveries');
+        const deliveries = await response.json();
+        
+        // Clear existing markers
+        markers.forEach(marker => map.removeLayer(marker));
+        markers = [];
+
+        // Clear existing booking cards
+        const bookingSection = document.querySelector('.bookings-section');
+        const existingCards = bookingSection.querySelectorAll('.booking-card');
+        existingCards.forEach(card => card.remove());
+
+        // Process each delivery
+        deliveries.forEach(delivery => {
+            if (currentFilter === 'all' || 
+                (currentFilter === 'pending' && delivery.DELIVERY_STATUS === 'Out for Delivery') ||
+                (currentFilter === 'scheduled' && delivery.DELIVERY_STATUS === 'Delivered')) {
+                
+                // Add marker to map
+                const marker = L.marker([13.3470, 74.7860]) // Replace with actual coordinates
+                    .bindPopup(`
+                        <b>Order #${delivery.ORDER_ID}</b><br>
+                        Customer: ${delivery.CUSTOMER_NAME}<br>
+                        Status: ${delivery.DELIVERY_STATUS}
+                    `);
+                marker.addTo(map);
+                markers.push(marker);
+
+                // Add booking card
+                const card = document.createElement('div');
+                card.className = 'booking-card';
+                card.innerHTML = `
+                    <div>Order ID: ${delivery.ORDER_ID}</div>
+                    <div>Status: ${delivery.DELIVERY_STATUS}</div>
+                    <div>Customer: ${delivery.CUSTOMER_NAME}</div>
+                    <div>Address: ${delivery.DELIVERY_ADDRESS}</div>
+                    <div>Delivery Person: ${delivery.DELIVERY_PERSON_NAME || 'Not Assigned'}</div>
+                `;
+                bookingSection.appendChild(card);
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching deliveries:', error);
+    }
 }
 
-function renderMarkers(status) {
-    markerGroup.clearLayers();
-    const filtered = status === 'All' ? bookings : bookings.filter(b => b.status === status);
-    filtered.forEach(booking => {
-        const marker = L.marker([booking.lat, booking.lng]);
-        marker.bindPopup(`
-            <b>Order #${booking.id}</b><br>
-            Status: ${booking.status}<br>
-            Pickup: ${booking.pickup}<br>
-            Drop: ${booking.drop}
-        `);
-        markerGroup.addLayer(marker);
-    });
-}
+// Filter button event listeners
+document.getElementById('btn-all').addEventListener('click', () => {
+    currentFilter = 'all';
+    fetchDeliveries();
+});
 
-function renderCards(status) {
-    const section = document.querySelector('.bookings-section');
-    
-    // Remove old cards
-    const oldCards = section.querySelectorAll('.booking-card');
-    oldCards.forEach(card => card.remove());
+document.getElementById('btn-pending').addEventListener('click', () => {
+    currentFilter = 'pending';
+    fetchDeliveries();
+});
 
-    const filtered = status === 'All' ? bookings : bookings.filter(b => b.status === status);
-    
-    filtered.forEach(booking => {
-        const card = document.createElement('div');
-        card.className = 'booking-card';
-        card.innerHTML = `
-            <div>Order ID: ${booking.id}</div>
-            <div>Status: ${booking.status}</div>
-            <div>Pickup: ${booking.pickup}</div>
-            <div>Drop: ${booking.drop}</div>
-        `;
-        section.appendChild(card);
-    });
-}
+document.getElementById('btn-scheduled').addEventListener('click', () => {
+    currentFilter = 'scheduled';
+    fetchDeliveries();
+});
 
+// Initialize when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
-    document.getElementById('btn-all').addEventListener('click', () => renderView('All'));
-    document.getElementById('btn-pending').addEventListener('click', () => renderView('Pending'));
-    document.getElementById('btn-scheduled').addEventListener('click', () => renderView('Scheduled'));
+    fetchDeliveries();
+    
+    // Refresh deliveries every 30 seconds
+    setInterval(fetchDeliveries, 30000);
 });

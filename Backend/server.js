@@ -956,6 +956,68 @@ app.post('/api/feedback', [authenticateToken, getConnection], async (req, res) =
     }
 });
 
+// Delivery Login endpoint
+app.post('/api/delivery/login', getConnection, async (req, res) => {
+    const { deliveryId, password } = req.body;
+    
+    try {
+        console.log('Delivery login attempt for ID:', deliveryId);
+        
+        const result = await req.connection.execute(
+            `SELECT d.delivery_id, d.password, e.name, e.employee_id, e.phone_number, e.salary
+             FROM delivery d
+             JOIN employee e ON d.employee_id = e.employee_id
+             WHERE d.delivery_id = :1 
+             AND e.role = 'Delivery'`,
+            [deliveryId],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid delivery ID or password' });
+        }
+
+        const user = result.rows[0];
+        console.log('Delivery person found:', user);
+
+        // Compare passwords
+        if (password.trim() !== user.PASSWORD.trim()) {
+            return res.status(401).json({ error: 'Invalid delivery ID or password' });
+        }
+
+        // Create user object
+        const userObject = {
+            delivery_id: user.DELIVERY_ID,
+            name: user.NAME,
+            employee_id: user.EMPLOYEE_ID,
+            phone_number: user.PHONE_NUMBER,
+            salary: user.SALARY
+        };
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { 
+                delivery_id: user.DELIVERY_ID,
+                name: user.NAME,
+                employee_id: user.EMPLOYEE_ID
+            },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        console.log('Delivery login successful for:', deliveryId);
+        res.json({
+            success: true,
+            message: "Login successful",
+            token,
+            user: userObject
+        });
+    } catch (error) {
+        console.error('Delivery login error:', error);
+        res.status(500).json({ error: 'Error during delivery login' });
+    }
+});
+
 // Initialize the application
 initialize().catch((err) => {
     console.error('Failed to initialize application:', err);
