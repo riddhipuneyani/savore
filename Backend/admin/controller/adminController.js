@@ -970,7 +970,8 @@ const adminController = {
                  JOIN customer c ON o.customer_id = c.customer_id
                  WHERE o.order_status = 'Pending'
                  AND NOT EXISTS (
-                    SELECT 1 FROM deliveries d 
+                    SELECT 1 
+                    FROM deliveries d 
                     WHERE d.order_id = o.order_id 
                     AND d.delivery_status = 'Out for Delivery'
                  )
@@ -1002,8 +1003,9 @@ const adminController = {
             connection = await oracledb.getConnection();
             
             const result = await connection.execute(
-                `SELECT e.employee_id, e.name, e.phone_number
+                `SELECT e.employee_id, e.name, e.phone_number, d.rating
                  FROM employee e
+                 JOIN delivery d ON e.employee_id = d.employee_id
                  WHERE e.role = 'Delivery'
                  AND e.employee_id NOT IN (
                     SELECT delivery_person_id 
@@ -1037,51 +1039,57 @@ const adminController = {
             connection = await oracledb.getConnection();
             const { order_id, delivery_person_id } = req.body;
 
-            // Start transaction
-            await connection.execute('BEGIN');
-
-            // Check if order is in valid state for assignment
-            const orderCheck = await connection.execute(
-                `SELECT order_status FROM orders WHERE order_id = :1`,
-                [order_id],
-                { outFormat: oracledb.OUT_FORMAT_OBJECT }
-            );
-
-            if (orderCheck.rows.length === 0) {
-                await connection.rollback();
-                return res.status(404).json({ error: 'Order not found' });
-            }
-
-            if (orderCheck.rows[0].ORDER_STATUS !== 'Pending') {
-                await connection.rollback();
-                return res.status(400).json({ error: 'Order must be in Pending status to assign delivery person' });
-            }
-
-            // Check if delivery person is available
-            const deliveryPersonCheck = await connection.execute(
-                `SELECT 1 FROM employee 
-                 WHERE employee_id = :1 
-                 AND role = 'Delivery'
-                 AND employee_id NOT IN (
-                    SELECT delivery_person_id 
-                    FROM deliveries 
-                    WHERE delivery_status = 'Out for Delivery'
-                 )`,
+            // First check if the employee exists and is a delivery person
+            const employeeCheck = await connection.execute(
+                `SELECT employee_id, name, role 
+                 FROM employee 
+                 WHERE employee_id = :1`,
                 [delivery_person_id],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
             );
 
-            if (deliveryPersonCheck.rows.length === 0) {
-                await connection.rollback();
-                return res.status(400).json({ error: 'Delivery person not available or invalid' });
+            if (employeeCheck.rows.length === 0) {
+                return res.status(400).json({ error: 'Employee not found' });
             }
 
-            // Generate a unique delivery_id
-            const deliveryIdResult = await connection.execute(
-                `SELECT 'D' || LPAD(NVL(MAX(TO_NUMBER(SUBSTR(delivery_id, 2))), 0) + 1, 4, '0') as new_id 
+            if (employeeCheck.rows[0].ROLE !== 'Delivery') {
+                return res.status(400).json({ error: 'Employee is not a delivery person' });
+            }
+
+            // Get the delivery_id for this employee
+            const deliveryCheck = await connection.execute(
+                `SELECT d.delivery_id 
+                 FROM delivery d
+                 WHERE d.employee_id = :1`,
+                [delivery_person_id],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            if (deliveryCheck.rows.length === 0) {
+                return res.status(400).json({ error: 'No delivery record found for this employee' });
+            }
+
+            const delivery_person_delivery_id = deliveryCheck.rows[0].DELIVERY_ID;
+
+            // Check if delivery person is already assigned to another active delivery
+            const activeDeliveryCheck = await connection.execute(
+                `SELECT 1 FROM deliveries 
+                 WHERE delivery_person_id = :1 
+                 AND delivery_status = 'Out for Delivery'`,
+                [delivery_person_delivery_id],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            if (activeDeliveryCheck.rows.length > 0) {
+                return res.status(400).json({ error: 'Delivery person is already assigned to an active delivery' });
+            }
+
+            // Generate a new delivery record ID
+            const newDeliveryIdResult = await connection.execute(
+                `SELECT 'D' || LPAD(NVL(MAX(TO_NUMBER(SUBSTR(delivery_id, 2))), 0) + 1, 3, '0') as new_id 
                  FROM deliveries`
             );
-            const delivery_id = deliveryIdResult.rows[0][0];
+            const new_delivery_id = newDeliveryIdResult.rows[0][0];
 
             // Insert into deliveries table
             await connection.execute(
@@ -1092,12 +1100,12 @@ const adminController = {
                     delivery_status, 
                     delivery_time
                 ) VALUES (
-                    :1, :2, :3, 'Out for Delivery', SYSTIMESTAMP
+                    :1, :2, :3, 'Out for Delivery', SYSDATE
                 )`,
-                [delivery_id, order_id, delivery_person_id]
+                [new_delivery_id, order_id, delivery_person_delivery_id]
             );
 
-            // Update order status to Processing when assigned
+            // Update order status to Processing
             await connection.execute(
                 `UPDATE orders 
                  SET order_status = 'Processing'
@@ -1109,7 +1117,7 @@ const adminController = {
 
             res.json({ 
                 message: 'Delivery person assigned successfully',
-                delivery_id: delivery_id
+                delivery_id: new_delivery_id
             });
         } catch (error) {
             console.error('Error assigning delivery person:', error);
@@ -1117,10 +1125,10 @@ const adminController = {
                 try {
                     await connection.rollback();
                 } catch (rollbackError) {
-                    console.error('Error rolling back transaction:', rollbackError);
+                    console.error('Error rolling back:', rollbackError);
                 }
             }
-            res.status(500).json({ error: 'Error assigning delivery person' });
+            res.status(500).json({ error: 'Error assigning delivery person: ' + error.message });
         } finally {
             if (connection) {
                 try {
@@ -1147,7 +1155,8 @@ const adminController = {
                  FROM deliveries d
                  JOIN orders o ON d.order_id = o.order_id
                  JOIN customer c ON o.customer_id = c.customer_id
-                 JOIN employee e ON d.delivery_person_id = e.employee_id
+                 JOIN delivery dl ON d.delivery_person_id = dl.delivery_id
+                 JOIN employee e ON dl.employee_id = e.employee_id
                  WHERE d.delivery_status = 'Out for Delivery'
                  ORDER BY d.delivery_time DESC`,
                 [],
