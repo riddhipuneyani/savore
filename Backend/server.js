@@ -1147,6 +1147,16 @@ app.put('/api/delivery/orders/:orderId/status', authenticateToken, async (req, r
             [status, orderId, deliveryId]
         );
 
+        // If status is 'Delivered', update the order status to 'Completed'
+        if (status === 'Delivered') {
+            await conn.execute(
+                `UPDATE orders 
+                 SET order_status = 'Completed'
+                 WHERE order_id = :orderId`,
+                [orderId]
+            );
+        }
+
         // Commit the transaction
         await conn.commit();
 
