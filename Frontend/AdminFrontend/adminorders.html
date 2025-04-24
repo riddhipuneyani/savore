@@ -105,7 +105,6 @@
                                 <tr>
                                     <th>Order ID</th>
                                     <th>Customer</th>
-                                    <th>Items</th>
                                     <th>Total</th>
                                     <th>Status</th>
                                     <th>Date</th>
@@ -117,11 +116,6 @@
                                 <tr>
                                     <td>#ORD001</td>
                                     <td>John Doe</td>
-                                    <td>
-                                        <button class="view-items-btn" onclick="viewOrderItems('ORD001')">
-                                            View Items (3)
-                                        </button>
-                                    </td>
                                     <td>₹1,250</td>
                                     <td><span class="status pending">Pending</span></td>
                                     <td>2024-03-20</td>
@@ -134,11 +128,6 @@
                                 <tr>
                                     <td>#ORD002</td>
                                     <td>Jane Smith</td>
-                                    <td>
-                                        <button class="view-items-btn" onclick="viewOrderItems('ORD002')">
-                                            View Items (2)
-                                        </button>
-                                    </td>
                                     <td>₹850</td>
                                     <td><span class="status completed">Completed</span></td>
                                     <td>2024-03-19</td>
@@ -156,25 +145,16 @@
         </main>
     </div>
 
-    <!-- Order Items Modal -->
-    <div id="orderItemsModal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2>Order Items</h2>
-            <div id="orderItemsList"></div>
-        </div>
-    </div>
-
     <!-- Update Status Modal -->
     <div id="statusModal" class="modal">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
             <h2>Update Order Status</h2>
             <select id="newStatus">
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="Pending">Pending</option>
+                <option value="Processing">Processing</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
             </select>
             <button class="action-btn process" onclick="saveOrderStatus()">Save Changes</button>
         </div>
@@ -218,14 +198,10 @@
 
             orders.forEach(order => {
                 const row = document.createElement('tr');
+                row.setAttribute('data-order-id', order.ORDER_ID);
                 row.innerHTML = `
                     <td>#${order.ORDER_ID}</td>
                     <td>${order.CUSTOMER_NAME}</td>
-                    <td>
-                        <button class="view-items-btn" onclick="viewOrderItems('${order.ORDER_ID}')">
-                            View Items (1)
-                        </button>
-                    </td>
                     <td>₹${order.TOTAL_PRICE}</td>
                     <td><span class="status ${order.ORDER_STATUS.toLowerCase()}">${order.ORDER_STATUS}</span></td>
                     <td>${new Date(order.ORDER_DATE).toLocaleDateString()}</td>
@@ -239,44 +215,6 @@
             });
         }
 
-        // View order items
-        async function viewOrderItems(orderId) {
-            try {
-                const response = await fetch(`http://localhost:3000/api/admin/orders/${orderId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (response.status === 401) {
-                    window.location.href = 'admin-login.html';
-                    return;
-                }
-
-                const order = await response.json();
-                const modal = document.getElementById('orderItemsModal');
-                const itemsList = document.getElementById('orderItemsList');
-
-                let itemsHTML = '<table class="items-table">';
-                itemsHTML += '<tr><th>Item</th><th>Quantity</th><th>Price</th></tr>';
-                
-                itemsHTML += `
-                    <tr>
-                        <td>${order.ITEM_NAME}</td>
-                        <td>${order.QUANTITY}</td>
-                        <td>₹${order.PRICE}</td>
-                    </tr>
-                `;
-                
-                itemsHTML += '</table>';
-                itemsList.innerHTML = itemsHTML;
-                modal.style.display = 'block';
-            } catch (error) {
-                console.error('Error fetching order details:', error);
-                alert('Error fetching order details. Please try again.');
-            }
-        }
-
         // Update order status
         async function updateOrderStatus(orderId) {
             currentOrderId = orderId;
@@ -284,11 +222,41 @@
             modal.style.display = 'block';
         }
 
+        // Validate status transition
+        function validateStatusTransition(currentStatus, newStatus) {
+            // Define valid status transitions
+            const validTransitions = {
+                'Pending': ['Processing', 'Cancelled'],
+                'Processing': ['Completed', 'Cancelled'],
+                'Completed': [],  // Once completed, no further changes
+                'Cancelled': []   // Once cancelled, no further changes
+            };
+
+            // If current status is not in the map, allow any transition
+            if (!validTransitions[currentStatus]) {
+                return true;
+            }
+
+            // Allow transition if new status is in the valid transitions array
+            return validTransitions[currentStatus].includes(newStatus);
+        }
+
         // Save order status
         async function saveOrderStatus() {
             if (!currentOrderId) return;
 
             const newStatus = document.getElementById('newStatus').value;
+            const currentStatus = document.querySelector(`tr[data-order-id="${currentOrderId}"] .status`).textContent;
+            
+            console.log('Current Status:', currentStatus);
+            console.log('New Status:', newStatus);
+            
+            // Validate status transition
+            if (!validateStatusTransition(currentStatus, newStatus)) {
+                alert('Invalid status transition. Please check the order status flow.');
+                return;
+            }
+
             try {
                 const response = await fetch(`http://localhost:3000/api/admin/orders/${currentOrderId}/status`, {
                     method: 'PUT',
@@ -304,15 +272,17 @@
                     return;
                 }
 
-                if (response.ok) {
-                    document.getElementById('statusModal').style.display = 'none';
-                    fetchOrders(); // Refresh the orders list
-                } else {
-                    throw new Error('Failed to update status');
+                const responseData = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(responseData.error || 'Failed to update status');
                 }
+
+                document.getElementById('statusModal').style.display = 'none';
+                fetchOrders(); // Refresh the orders list
             } catch (error) {
                 console.error('Error updating order status:', error);
-                alert('Error updating order status. Please try again.');
+                alert('Error updating order status: ' + error.message);
             }
         }
 
