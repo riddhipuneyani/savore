@@ -1018,15 +1018,15 @@ app.post('/api/delivery/login', getConnection, async (req, res) => {
     }
 });
 
-// Delivery Profile endpoint
+// Get delivery person profile endpoint
 app.get('/api/delivery/profile', authenticateToken, async (req, res) => {
     let conn;
     try {
         conn = await oracledb.getConnection();
         
-        // Get employee details using the delivery_id from the token
+        // Get delivery person details by joining employee and delivery tables
         const result = await conn.execute(
-            `SELECT e.name, e.phone_number, e.salary, e.employee_id
+            `SELECT e.name, e.phone_number, d.delivery_id, e.employee_id
              FROM employee e
              JOIN delivery d ON e.employee_id = d.employee_id
              WHERE d.delivery_id = :deliveryId`,
@@ -1034,20 +1034,20 @@ app.get('/api/delivery/profile', authenticateToken, async (req, res) => {
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Employee not found' });
+            return res.status(404).json({ error: 'Delivery person not found' });
         }
 
-        const employee = {
+        const profile = {
             name: result.rows[0][0],
             phoneNumber: result.rows[0][1],
-            salary: result.rows[0][2],
+            deliveryId: result.rows[0][2],
             employeeId: result.rows[0][3]
         };
 
-        res.json(employee);
+        res.json(profile);
     } catch (error) {
-        console.error('Error fetching employee profile:', error);
-        res.status(500).json({ error: 'Error fetching employee profile' });
+        console.error('Error fetching delivery profile:', error);
+        res.status(500).json({ error: 'Error fetching delivery profile' });
     } finally {
         if (conn) {
             try {
