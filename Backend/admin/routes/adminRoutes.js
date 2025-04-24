@@ -29,6 +29,25 @@ router.get('/analytics/customers', adminController.getCustomerAnalytics);
 // Settings routes
 router.put('/settings/password', adminController.changePassword);
 
+// Menu management routes
+router.get('/menu', adminController.getAllMenuItems);
+router.post('/menu', adminController.addMenuItem);
+router.put('/menu/:menuId', adminController.updateMenuItem);
+router.delete('/menu/:menuId', adminController.deleteMenuItem);
+
+// Employee management routes
+router.get('/employees', adminController.getAllEmployees);
+router.get('/employees/:employeeId', adminController.getEmployeeById);
+router.post('/employees', adminController.addEmployee);
+router.put('/employees/:employeeId', adminController.updateEmployee);
+router.delete('/employees/:employeeId', adminController.deleteEmployee);
+
+// Delivery management routes
+router.get('/unassigned-orders', adminController.getUnassignedOrders);
+router.get('/available-delivery-persons', adminController.getAvailableDeliveryPersons);
+router.get('/active-deliveries', adminController.getActiveDeliveries);
+router.post('/assign-delivery', adminController.assignDeliveryPerson);
+
 // Add more protected admin routes here
 // Example:
 // router.get('/orders', adminController.getOrders);

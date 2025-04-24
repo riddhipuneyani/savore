@@ -956,6 +956,238 @@ app.post('/api/feedback', [authenticateToken, getConnection], async (req, res) =
     }
 });
 
+// Delivery Login endpoint
+app.post('/api/delivery/login', getConnection, async (req, res) => {
+    const { deliveryId, password } = req.body;
+    
+    try {
+        console.log('Delivery login attempt for ID:', deliveryId);
+        
+        const result = await req.connection.execute(
+            `SELECT d.delivery_id, d.password, e.name, e.employee_id, e.phone_number, e.salary
+             FROM delivery d
+             JOIN employee e ON d.employee_id = e.employee_id
+             WHERE d.delivery_id = :1 
+             AND e.role = 'Delivery'`,
+            [deliveryId],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid delivery ID or password' });
+        }
+
+        const user = result.rows[0];
+        console.log('Delivery person found:', user);
+
+        // Compare passwords
+        if (password.trim() !== user.PASSWORD.trim()) {
+            return res.status(401).json({ error: 'Invalid delivery ID or password' });
+        }
+
+        // Create user object
+        const userObject = {
+            delivery_id: user.DELIVERY_ID,
+            name: user.NAME,
+            employee_id: user.EMPLOYEE_ID,
+            phone_number: user.PHONE_NUMBER,
+            salary: user.SALARY
+        };
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { 
+                delivery_id: user.DELIVERY_ID,
+                name: user.NAME,
+                employee_id: user.EMPLOYEE_ID
+            },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        console.log('Delivery login successful for:', deliveryId);
+        res.json({
+            success: true,
+            message: "Login successful",
+            token,
+            user: userObject
+        });
+    } catch (error) {
+        console.error('Delivery login error:', error);
+        res.status(500).json({ error: 'Error during delivery login' });
+    }
+});
+
+// Get delivery person profile endpoint
+app.get('/api/delivery/profile', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        conn = await oracledb.getConnection();
+        
+        // Get delivery person details by joining employee and delivery tables
+        const result = await conn.execute(
+            `SELECT e.name, e.phone_number, d.delivery_id, e.employee_id
+             FROM employee e
+             JOIN delivery d ON e.employee_id = d.employee_id
+             WHERE d.delivery_id = :deliveryId`,
+            [req.user.delivery_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Delivery person not found' });
+        }
+
+        const profile = {
+            name: result.rows[0][0],
+            phoneNumber: result.rows[0][1],
+            deliveryId: result.rows[0][2],
+            employeeId: result.rows[0][3]
+        };
+
+        res.json(profile);
+    } catch (error) {
+        console.error('Error fetching delivery profile:', error);
+        res.status(500).json({ error: 'Error fetching delivery profile' });
+    } finally {
+        if (conn) {
+            try {
+                await conn.close();
+            } catch (err) {
+                console.error('Error closing connection:', err);
+            }
+        }
+    }
+});
+
+// Get orders for specific delivery person
+app.get('/api/delivery/orders', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        conn = await oracledb.getConnection();
+        
+        const result = await conn.execute(
+            `SELECT o.order_id, o.customer_id, o.order_date, o.order_status, o.total_price,
+                    c.name as customer_name, c.phone_number as customer_phone, c.address as delivery_address,
+                    d.delivery_status,
+                    p.payment_method, p.payment_status, p.amount
+             FROM orders o
+             JOIN customer c ON o.customer_id = c.customer_id
+             JOIN deliveries d ON o.order_id = d.order_id
+             LEFT JOIN payment p ON o.order_id = p.order_id
+             WHERE d.delivery_person_id = :deliveryId
+             ORDER BY o.order_date DESC`,
+            [req.user.delivery_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.json([]); // Return empty array if no orders found
+        }
+
+        const orders = result.rows.map(row => ({
+            orderId: row[0],
+            customerId: row[1],
+            orderDate: row[2],
+            orderStatus: row[3],
+            totalPrice: row[4],
+            customerName: row[5],
+            customerPhone: row[6],
+            deliveryAddress: row[7],
+            deliveryStatus: row[8],
+            paymentMethod: row[9] || 'Not specified',
+            paymentStatus: row[10] || 'Pending',
+            paymentAmount: row[11] || row[4] // Use total price if payment amount is null
+        }));
+
+        res.json(orders);
+    } catch (error) {
+        console.error('Error fetching delivery orders:', error);
+        res.status(500).json({ error: 'Error fetching delivery orders' });
+    } finally {
+        if (conn) {
+            try {
+                await conn.close();
+            } catch (err) {
+                console.error('Error closing connection:', err);
+            }
+        }
+    }
+});
+
+// Update delivery status endpoint
+app.put('/api/delivery/orders/:orderId/status', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        conn = await oracledb.getConnection();
+        const { status } = req.body;
+        const { orderId } = req.params;
+        const deliveryId = req.user.delivery_id;
+
+        console.log('Updating status:', { orderId, deliveryId, status });
+
+        // First verify the delivery exists and belongs to this delivery person
+        const verifyResult = await conn.execute(
+            `SELECT * FROM deliveries 
+             WHERE order_id = :orderId 
+             AND delivery_person_id = :deliveryId`,
+            [orderId, deliveryId],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        if (verifyResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Order not found or unauthorized' });
+        }
+
+        // Update the delivery status and set delivery_time to current timestamp
+        const result = await conn.execute(
+            `UPDATE deliveries 
+             SET delivery_status = :status,
+                 delivery_time = CURRENT_TIMESTAMP
+             WHERE order_id = :orderId 
+             AND delivery_person_id = :deliveryId`,
+            [status, orderId, deliveryId]
+        );
+
+        // If status is 'Delivered', update the order status to 'Completed'
+        if (status === 'Delivered') {
+            await conn.execute(
+                `UPDATE orders 
+                 SET order_status = 'Completed'
+                 WHERE order_id = :orderId`,
+                [orderId]
+            );
+        }
+
+        // Commit the transaction
+        await conn.commit();
+
+        console.log('Update result:', result);
+
+        if (result.rowsAffected === 0) {
+            return res.status(404).json({ error: 'Failed to update status' });
+        }
+
+        res.json({ message: 'Delivery status updated successfully' });
+    } catch (error) {
+        console.error('Error updating delivery status:', error);
+        if (conn) {
+            try {
+                await conn.rollback();
+            } catch (rollbackError) {
+                console.error('Error rolling back transaction:', rollbackError);
+            }
+        }
+        res.status(500).json({ error: 'Error updating delivery status' });
+    } finally {
+        if (conn) {
+            try {
+                await conn.close();
+            } catch (err) {
+                console.error('Error closing connection:', err);
+            }
+        }
+    }
+});
+
 // Initialize the application
 initialize().catch((err) => {
     console.error('Failed to initialize application:', err);

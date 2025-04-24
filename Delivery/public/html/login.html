@@ -2,32 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Savore</title>
     <link rel="stylesheet" href="../css/login.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="login-box">
-        <img src="../assets/savore_yellow.png" alt="Savore Logo" class="logo">
-        <h1>Login</h1>
-        <form id="loginForm">
-            <!-- Delivery ID input -->
-            <input type="text" id="deliveryId" placeholder="Delivery ID" required>
+    <div class="login-container">
+        <div class="login-box">
+            <img src="../assets/savore_yellow.png" alt="Savore Logo" class="logo">
+            <h1>Delivery Login</h1>
+            <form id="loginForm">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="deliveryId" placeholder="Delivery ID" required>
+                </div>
+                
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="loginPassword" placeholder="Password" required>
+                    <span class="toggle-password" onclick="togglePassword('loginPassword', this)">
+                        <i class="fas fa-eye"></i>
+                    </span>
+                </div>
 
-            <!-- Password input with toggle -->
-            <div class="password-container">
-                <input type="password" id="loginPassword" placeholder="Password" required>
-                <span class="toggle-password" onclick="togglePassword('loginPassword', this)">👁️</span>
+                <button type="submit" class="login-btn">
+                    <span>Login</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <div class="links">
+                <a href="forgot-password.html">Forgot Password?</a>
+                <span>|</span>
+                <a href="signup.html">Sign Up</a>
             </div>
-
-            <!-- Login button -->
-            <button type="submit">Login</button>
-        </form>
-
-        <!-- Links -->
-        <div class="links">
-            <a href="forgot-password.html">Forgot Password?</a> | 
-            <a href="signup.html">Sign Up</a>
         </div>
     </div>
 

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savore Admin - Employee Management</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .status-active {
+            background-color: #4CAF50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .status-inactive {
+            background-color: #f44336;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../images/savore_logo_new.png" alt="Savore Logo" class="admin-logo">
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="admin-dashboard.html">
+                        <i class="fas fa-home"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="menu_management.html">
+                        <i class="fas fa-utensils"></i>
+                        Menu Management
+                    </a>
+                </li>
+                <li>
+                    <a href="employee_management.html" class="active">
+                        <i class="fas fa-users-cog"></i>
+                        Employee Management
+                    </a>
+                </li>
+                <li>
+                    <a href="adminorders.html">
+                        <i class="fas fa-shopping-cart"></i>
+                        Orders
+                    </a>
+                </li>
+                <li>
+                    <a href="delivery-management.html">
+                        <i class="fas fa-truck"></i>
+                        Delivery Management
+                    </a>
+                </li>
+                <li>
+                    <a href="customers.html">
+                        <i class="fas fa-users"></i>
+                        Customers
+                    </a>
+                </li>
+                <li>
+                    <a href="analytics.html">
+                        <i class="fas fa-chart-bar"></i>
+                        Analytics
+                    </a>
+                </li>
+                <li>
+                    <a href="settings.html">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                </li>
+                
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <header class="dashboard-header">
+                <h1 class="dashboard-title">Employee Management</h1>
+                <div class="user-profile">
+                    <img src="../images/user-icon.png" alt="Admin Profile">
+                    <span id="adminName">Admin</span>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
+            </header>
+
+            <div class="menu-management-container">
+                <!-- Add New Employee Section -->
+                <div class="add-item-section">
+                    <h2>Add New Employee</h2>
+                    <form id="employeeForm" class="menu-form">
+                        <div class="form-group">
+                            <input type="text" id="employeeName" placeholder="Full Name" required>
+                            <input type="tel" id="employeePhone" placeholder="Phone Number" required pattern="[0-9]{10}">
+                            <select id="employeeRole" required>
+                                <option value="">Select Role</option>
+                                <option value="Manager">Manager</option>
+                                <option value="Chef">Chef</option>
+                                <option value="Delivery">Delivery</option>
+                            </select>
+                            <input type="number" id="employeeSalary" placeholder="Salary" min="0" required>
+                            <button type="submit" class="add-item-btn">
+                                Add Employee
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Employees Table -->
+                <div class="menu-items-section">
+                    <h2>Current Employees</h2>
+                    <div class="table-container">
+                        <table id="employeeTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Phone</th>
+                                    <th>Salary</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Employees will be dynamically added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Employee Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Edit Employee</h2>
+            <form id="editForm" class="menu-form">
+                <input type="hidden" id="editEmployeeId">
+                <div class="form-group">
+                    <input type="text" id="editEmployeeName" placeholder="Full Name" required>
+                    <input type="tel" id="editEmployeePhone" placeholder="Phone Number" required pattern="[0-9]{10}">
+                    <select id="editEmployeeRole" required>
+                        <option value="">Select Role</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Chef">Chef</option>
+                        <option value="Delivery">Delivery</option>
+                    </select>
+                    <input type="number" id="editEmployeeSalary" placeholder="Salary" min="0" required>
+                    <button type="submit" class="action-btn process">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('adminToken');
+        let employees = [];
+
+        // Check if admin is logged in
+        if (!token) {
+            window.location.href = 'admin-login.html';
+        }
+
+        // Fetch employees
+        async function fetchEmployees() {
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/employees', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    window.location.href = 'admin-login.html';
+                    return;
+                }
+
+                employees = await response.json();
+                renderEmployees();
+            } catch (error) {
+                console.error('Error fetching employees:', error);
+                alert('Error fetching employees. Please try again.');
+            }
+        }
+
+        // Render employees
+        function renderEmployees() {
+            const tbody = document.querySelector('#employeeTable tbody');
+            tbody.innerHTML = '';
+
+            employees.forEach((employee, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${employee.NAME}</td>
+                    <td>${employee.ROLE}</td>
+                    <td>${employee.PHONE_NUMBER}</td>
+                    <td>₹${employee.SALARY}</td>
+                    <td>
+                        <button class="action-btn process" onclick="openEditModal('${employee.EMPLOYEE_ID}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="action-btn delete" onclick="deleteEmployee('${employee.EMPLOYEE_ID}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Add new employee
+        document.getElementById('employeeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('employeeName').value,
+                phone_number: document.getElementById('employeePhone').value,
+                role: document.getElementById('employeeRole').value,
+                salary: parseFloat(document.getElementById('employeeSalary').value)
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/employees', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    alert('Employee added successfully!');
+                    document.getElementById('employeeForm').reset();
+                    fetchEmployees();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Error adding employee');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error adding employee');
+            }
+        });
+
+        // Open edit modal
+        function openEditModal(employeeId) {
+            const employee = employees.find(emp => emp.EMPLOYEE_ID === employeeId);
+            if (!employee) return;
+
+            document.getElementById('editEmployeeId').value = employee.EMPLOYEE_ID;
+            document.getElementById('editEmployeeName').value = employee.NAME;
+            document.getElementById('editEmployeePhone').value = employee.PHONE_NUMBER;
+            document.getElementById('editEmployeeRole').value = employee.ROLE;
+            document.getElementById('editEmployeeSalary').value = employee.SALARY;
+
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        // Edit employee
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const employeeId = document.getElementById('editEmployeeId').value;
+            
+            const formData = {
+                name: document.getElementById('editEmployeeName').value,
+                phone_number: document.getElementById('editEmployeePhone').value,
+                role: document.getElementById('editEmployeeRole').value,
+                salary: parseFloat(document.getElementById('editEmployeeSalary').value)
+            };
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/admin/employees/${employeeId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    alert('Employee updated successfully!');
+                    document.getElementById('editModal').style.display = 'none';
+                    fetchEmployees();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Error updating employee');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error updating employee');
+            }
+        });
+
+        // Delete employee
+        async function deleteEmployee(employeeId) {
+            if (confirm('Are you sure you want to delete this employee?')) {
+                try {
+                    const response = await fetch(`http://localhost:3000/api/admin/employees/${employeeId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.status === 401) {
+                        window.location.href = 'admin-login.html';
+                        return;
+                    }
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        alert(data.message);
+                        fetchEmployees(); // Refresh the employees list
+                    } else {
+                        alert(data.error || 'Failed to delete employee');
+                    }
+                } catch (error) {
+                    console.error('Error deleting employee:', error);
+                    alert('Error deleting employee. Please try again.');
+                }
+            }
+        }
+
+        // Modal functionality
+        const modal = document.getElementById('editModal');
+        const closeButton = document.querySelector('.close-modal');
+
+        closeButton.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Fetch employees when page loads
+        fetchEmployees();
+    </script>
+</body>
+
+</html> 

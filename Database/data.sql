@@ -52,11 +52,11 @@ INSERT INTO customer (customer_id, name, phone_number, email, address, password)
 
 
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
-('M001', 'Veggie Delight Pizza', 'Veg Main Course', 199, 'Loaded veggie pizza', 'Available','uploaded_img/pizza-1.png');
+('M001', 'Veggie Delight Pizza', 'Veg Main Course', 199, 'Loaded veggie pizza', 'Available','images/pizza-1.png');
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
 ('M002', 'Alfredo Pasta', 'Veg Main Course', 250, 'Creamy white sauce pasta', 'Available','images/alfredo pasta.webp');
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
-('M003', 'Cheese Hamburger', 'Veg Main Course', 150, 'Juicy burger with cheese', 'Available','uploaded_img/burger-1.png');
+('M003', 'Cheese Hamburger', 'Veg Main Course', 150, 'Juicy burger with cheese', 'Available','images/burger-1.png');
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
 ('M004', 'Tiramisu', 'Desserts', 200, 'Italian coffee-flavored dessert', 'Available','images/tiramisu.jpeg');
 INSERT INTO menu (menu_id, item_name, category, price, description, availability_status,image_link) VALUES
