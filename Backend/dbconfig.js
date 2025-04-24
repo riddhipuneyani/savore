@@ -1,7 +1,7 @@
 // dbConfig.js
 module.exports = {
-    user: 'RestroProject',
-    password: 'savore',
+    user: 'project',
+    password: 'project',
     connectString: 'localhost:1521/XE'
 };
 
