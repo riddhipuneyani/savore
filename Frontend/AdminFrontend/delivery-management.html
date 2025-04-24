@@ -104,7 +104,7 @@
             <div class="container-fluid py-4">
                 <div class="row">
                     <!-- Unassigned Orders -->
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="card">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="card-title mb-0">Unassigned Orders</h5>
@@ -115,20 +115,8 @@
                         </div>
                     </div>
 
-                    <!-- Available Delivery Persons -->
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-header bg-success text-white">
-                                <h5 class="card-title mb-0">Available Delivery Persons</h5>
-                            </div>
-                            <div class="card-body" id="availableDeliveryPersons">
-                                <!-- Delivery persons will be loaded here -->
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Active Deliveries -->
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="card">
                             <div class="card-header bg-info text-white">
                                 <h5 class="card-title mb-0">Active Deliveries</h5>
@@ -137,15 +125,6 @@
                                 <!-- Active deliveries will be loaded here -->
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Assign Button -->
-                <div class="row mt-3">
-                    <div class="col-md-8">
-                        <button id="assignButton" class="btn btn-primary" disabled>
-                            Assign Delivery Person
-                        </button>
                     </div>
                 </div>
             </div>
@@ -181,9 +160,7 @@
 
             // Initialize delivery management
             loadUnassignedOrders();
-            loadAvailableDeliveryPersons();
             loadActiveDeliveries();
-            document.getElementById('assignButton').addEventListener('click', assignDelivery);
         });
 
         let selectedOrder = null;
@@ -194,69 +171,77 @@
         async function loadUnassignedOrders() {
             try {
                 const token = localStorage.getItem('adminToken');
-                const response = await fetch(`${API_BASE_URL}/unassigned-orders`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                const orders = await response.json();
+                const [ordersResponse, deliveryPersonsResponse] = await Promise.all([
+                    fetch(`${API_BASE_URL}/unassigned-orders`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch(`${API_BASE_URL}/available-delivery-persons`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ]);
                 
-                const ordersHtml = orders.map(order => `
-                    <div class="card order-card mb-2" data-order-id="${order.ORDER_ID}">
-                        <div class="card-body">
-                            <h6 class="card-title">Order #${order.ORDER_ID}</h6>
-                            <p class="card-text">
-                                <strong>Customer:</strong> ${order.CUSTOMER_NAME}<br>
-                                <strong>Address:</strong> ${order.ADDRESS}<br>
-                                <strong>Total:</strong> ₹${order.TOTAL_PRICE}<br>
-                                <strong>Date:</strong> ${new Date(order.ORDER_DATE).toLocaleString()}
-                            </p>
+                const orders = await ordersResponse.json();
+                const deliveryPersons = await deliveryPersonsResponse.json();
+                
+                let ordersHtml;
+                if (orders.length === 0) {
+                    ordersHtml = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No unassigned orders at the moment.
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                } else {
+                    ordersHtml = orders.map(order => `
+                        <div class="card order-card mb-3" data-order-id="${order.ORDER_ID}">
+                            <div class="card-body">
+                                <h6 class="card-title">Order #${order.ORDER_ID}</h6>
+                                <p class="card-text">
+                                    <strong>Customer:</strong> ${order.CUSTOMER_NAME}<br>
+                                    <strong>Address:</strong> ${order.ADDRESS}<br>
+                                    <strong>Total:</strong> ₹${order.TOTAL_PRICE}<br>
+                                    <strong>Date:</strong> ${new Date(order.ORDER_DATE).toLocaleString()}
+                                </p>
+                                <div class="form-group">
+                                    <label for="deliveryPerson_${order.ORDER_ID}">Assign Delivery Person:</label>
+                                    <select class="form-control delivery-person-select" id="deliveryPerson_${order.ORDER_ID}">
+                                        <option value="">Select Delivery Person</option>
+                                        ${deliveryPersons.map(person => `
+                                            <option value="${person.EMPLOYEE_ID}">${person.NAME}</option>
+                                        `).join('')}
+                                    </select>
+                                </div>
+                                <button class="btn btn-primary btn-sm mt-2 assign-btn" data-order-id="${order.ORDER_ID}">
+                                    Assign
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
                 
                 document.getElementById('unassignedOrders').innerHTML = ordersHtml;
                 
-                // Add click event listeners
-                document.querySelectorAll('.order-card').forEach(card => {
-                    card.addEventListener('click', () => selectOrder(card));
+                // Add click event listeners for assign buttons
+                document.querySelectorAll('.assign-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const orderId = btn.dataset.orderId;
+                        const select = document.getElementById(`deliveryPerson_${orderId}`);
+                        const deliveryPersonId = select.value;
+                        
+                        if (!deliveryPersonId) {
+                            alert('Please select a delivery person');
+                            return;
+                        }
+                        
+                        assignDelivery(orderId, deliveryPersonId);
+                    });
                 });
             } catch (error) {
                 console.error('Error loading unassigned orders:', error);
-            }
-        }
-
-        // Load available delivery persons
-        async function loadAvailableDeliveryPersons() {
-            try {
-                const token = localStorage.getItem('adminToken');
-                const response = await fetch(`${API_BASE_URL}/available-delivery-persons`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                const deliveryPersons = await response.json();
-                
-                const deliveryPersonsHtml = deliveryPersons.map(person => `
-                    <div class="card delivery-person-card mb-2" data-delivery-id="${person.DELIVERY_ID}">
-                        <div class="card-body">
-                            <h6 class="card-title">${person.NAME}</h6>
-                            <p class="card-text">
-                                <strong>Phone:</strong> ${person.PHONE_NUMBER}<br>
-                                <strong>Rating:</strong> ${person.RATING} ⭐<br>
-                            </p>
-                        </div>
+                document.getElementById('unassignedOrders').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> Error loading unassigned orders. Please try again.
                     </div>
-                `).join('');
-                
-                document.getElementById('availableDeliveryPersons').innerHTML = deliveryPersonsHtml;
-                
-                // Add click event listeners
-                document.querySelectorAll('.delivery-person-card').forEach(card => {
-                    card.addEventListener('click', () => selectDeliveryPerson(card));
-                });
-            } catch (error) {
-                console.error('Error loading delivery persons:', error);
+                `;
             }
         }
 
@@ -271,53 +256,43 @@
                 });
                 const deliveries = await response.json();
                 
-                const deliveriesHtml = deliveries.map(delivery => `
-                    <div class="card mb-2">
-                        <div class="card-body">
-                            <h6 class="card-title">Delivery #${delivery.DELIVERY_ID}</h6>
-                            <p class="card-text">
-                                <strong>Order:</strong> #${delivery.ORDER_ID}<br>
-                                <strong>Customer:</strong> ${delivery.CUSTOMER_NAME}<br>
-                                <strong>Delivery Person:</strong> ${delivery.DELIVERY_PERSON_NAME}<br>
-                                <strong>Status:</strong> ${delivery.DELIVERY_STATUS}<br>
-                                <strong>Time:</strong> ${new Date(delivery.DELIVERY_TIME).toLocaleString()}
-                            </p>
+                let deliveriesHtml;
+                if (deliveries.length === 0) {
+                    deliveriesHtml = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No active deliveries at the moment.
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                } else {
+                    deliveriesHtml = deliveries.map(delivery => `
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6 class="card-title">Delivery #${delivery.DELIVERY_ID}</h6>
+                                <p class="card-text">
+                                    <strong>Order:</strong> #${delivery.ORDER_ID}<br>
+                                    <strong>Customer:</strong> ${delivery.CUSTOMER_NAME}<br>
+                                    <strong>Delivery Person:</strong> ${delivery.DELIVERY_PERSON_NAME}<br>
+                                    <strong>Status:</strong> ${delivery.DELIVERY_STATUS}<br>
+                                    <strong>Time:</strong> ${new Date(delivery.DELIVERY_TIME).toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+                    `).join('');
+                }
                 
                 document.getElementById('activeDeliveries').innerHTML = deliveriesHtml;
             } catch (error) {
                 console.error('Error loading active deliveries:', error);
+                document.getElementById('activeDeliveries').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> Error loading active deliveries. Please try again.
+                    </div>
+                `;
             }
         }
 
-        // Select order
-        function selectOrder(card) {
-            document.querySelectorAll('.order-card').forEach(c => c.classList.remove('selected-order'));
-            card.classList.add('selected-order');
-            selectedOrder = card.dataset.orderId;
-            updateAssignButton();
-        }
-
-        // Select delivery person
-        function selectDeliveryPerson(card) {
-            document.querySelectorAll('.delivery-person-card').forEach(c => c.classList.remove('selected-delivery-person'));
-            card.classList.add('selected-delivery-person');
-            selectedDeliveryPerson = card.dataset.deliveryId;
-            updateAssignButton();
-        }
-
-        // Update assign button state
-        function updateAssignButton() {
-            const assignButton = document.getElementById('assignButton');
-            assignButton.disabled = !(selectedOrder && selectedDeliveryPerson);
-        }
-
         // Assign delivery person to order
-        async function assignDelivery() {
-            if (!selectedOrder || !selectedDeliveryPerson) return;
-
+        async function assignDelivery(orderId, deliveryPersonId) {
             try {
                 const token = localStorage.getItem('adminToken');
                 const response = await fetch(`${API_BASE_URL}/assign-delivery`, {
@@ -327,8 +302,8 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        order_id: selectedOrder,
-                        delivery_person_id: selectedDeliveryPerson
+                        order_id: orderId,
+                        delivery_person_id: deliveryPersonId
                     })
                 });
 
@@ -338,17 +313,9 @@
                     // Show success message
                     alert('Delivery person assigned successfully!');
                     
-                    // Reset selections
-                    selectedOrder = null;
-                    selectedDeliveryPerson = null;
-                    document.querySelectorAll('.selected-order, .selected-delivery-person')
-                        .forEach(el => el.classList.remove('selected-order', 'selected-delivery-person'));
-                    updateAssignButton();
-
                     // Reload all data
                     await Promise.all([
                         loadUnassignedOrders(),
-                        loadAvailableDeliveryPersons(),
                         loadActiveDeliveries()
                     ]);
                 } else {
@@ -363,7 +330,6 @@
         // Refresh data every 30 seconds
         setInterval(() => {
             loadUnassignedOrders();
-            loadAvailableDeliveryPersons();
             loadActiveDeliveries();
         }, 30000);
     </script>
