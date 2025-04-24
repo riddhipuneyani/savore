@@ -105,7 +105,6 @@
                                 <tr>
                                     <th>Order ID</th>
                                     <th>Customer</th>
-                                    <th>Items</th>
                                     <th>Total</th>
                                     <th>Status</th>
                                     <th>Date</th>
@@ -117,11 +116,6 @@
                                 <tr>
                                     <td>#ORD001</td>
                                     <td>John Doe</td>
-                                    <td>
-                                        <button class="view-items-btn" onclick="viewOrderItems('ORD001')">
-                                            View Items (3)
-                                        </button>
-                                    </td>
                                     <td>₹1,250</td>
                                     <td><span class="status pending">Pending</span></td>
                                     <td>2024-03-20</td>
@@ -134,11 +128,6 @@
                                 <tr>
                                     <td>#ORD002</td>
                                     <td>Jane Smith</td>
-                                    <td>
-                                        <button class="view-items-btn" onclick="viewOrderItems('ORD002')">
-                                            View Items (2)
-                                        </button>
-                                    </td>
                                     <td>₹850</td>
                                     <td><span class="status completed">Completed</span></td>
                                     <td>2024-03-19</td>
@@ -154,15 +143,6 @@
                 </div>
             </div>
         </main>
-    </div>
-
-    <!-- Order Items Modal -->
-    <div id="orderItemsModal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2>Order Items</h2>
-            <div id="orderItemsList"></div>
-        </div>
     </div>
 
     <!-- Update Status Modal -->
@@ -222,11 +202,6 @@
                 row.innerHTML = `
                     <td>#${order.ORDER_ID}</td>
                     <td>${order.CUSTOMER_NAME}</td>
-                    <td>
-                        <button class="view-items-btn" onclick="viewOrderItems('${order.ORDER_ID}')">
-                            View Items (1)
-                        </button>
-                    </td>
                     <td>₹${order.TOTAL_PRICE}</td>
                     <td><span class="status ${order.ORDER_STATUS.toLowerCase()}">${order.ORDER_STATUS}</span></td>
                     <td>${new Date(order.ORDER_DATE).toLocaleDateString()}</td>
@@ -238,44 +213,6 @@
                 `;
                 tbody.appendChild(row);
             });
-        }
-
-        // View order items
-        async function viewOrderItems(orderId) {
-            try {
-                const response = await fetch(`http://localhost:3000/api/admin/orders/${orderId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (response.status === 401) {
-                    window.location.href = 'admin-login.html';
-                    return;
-                }
-
-                const order = await response.json();
-                const modal = document.getElementById('orderItemsModal');
-                const itemsList = document.getElementById('orderItemsList');
-
-                let itemsHTML = '<table class="items-table">';
-                itemsHTML += '<tr><th>Item</th><th>Quantity</th><th>Price</th></tr>';
-                
-                itemsHTML += `
-                    <tr>
-                        <td>${order.ITEM_NAME}</td>
-                        <td>${order.QUANTITY}</td>
-                        <td>₹${order.PRICE}</td>
-                    </tr>
-                `;
-                
-                itemsHTML += '</table>';
-                itemsList.innerHTML = itemsHTML;
-                modal.style.display = 'block';
-            } catch (error) {
-                console.error('Error fetching order details:', error);
-                alert('Error fetching order details. Please try again.');
-            }
         }
 
         // Update order status

@@ -106,36 +106,6 @@
             </header>
 
             <div class="menu-management-container">
-                <!-- Add New Item Section -->
-                <div class="add-item-section">
-                    <h2>Add New Menu Item</h2>
-                    <form id="menuForm" class="menu-form">
-                        <div class="form-group">
-                            <input type="text" id="itemName" placeholder="Item Name" required>
-                            <input type="number" id="itemPrice" placeholder="Price (₹)" step="0.01" required>
-                            <select id="itemCategory" required>
-                                <option value="">Select Category</option>
-                                <option value="Veg Starter">Veg Starter</option>
-                                <option value="Non-Veg Starter">Non-Veg Starter</option>
-                                <option value="Veg Main Course">Veg Main Course</option>
-                                <option value="Non-Veg Main Course">Non-Veg Main Course</option>
-                                <option value="Desserts">Desserts</option>
-                                <option value="Drinks">Drinks</option>
-                                <option value="International">International</option>
-                            </select>
-                            <input type="text" id="itemImageLink" placeholder="Image Link" required>
-                            <select id="itemAvailability" required>
-                                <option value="Available">Available</option>
-                                <option value="Not Available">Not Available</option>
-                            </select>
-                            <textarea id="itemDescription" placeholder="Item Description" required></textarea>
-                            <button type="submit" class="add-item-btn">
-                                Add Item
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
                 <!-- Menu Items Table -->
                 <div class="menu-items-section">
                     <h2>Current Menu Items</h2>
@@ -219,11 +189,11 @@
                 }
 
                 menuItems = await response.json();
-            renderMenu();
+                renderMenu();
             } catch (error) {
                 console.error('Error fetching menu items:', error);
                 alert('Error fetching menu items. Please try again.');
-        }
+            }
         }
 
         // Render menu items
@@ -245,61 +215,11 @@
                         <button class="action-btn process" onclick="openEditModal('${item.ITEM_ID}')">
                             <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button class="action-btn delete" onclick="deleteItem('${item.ITEM_ID}')">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
         }
-
-        // Add new menu item
-        document.getElementById('menuForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = {
-                name: document.getElementById('itemName').value,
-                description: document.getElementById('itemDescription').value,
-                price: parseFloat(document.getElementById('itemPrice').value),
-                category: document.getElementById('itemCategory').value,
-                image_link: document.getElementById('itemImageLink').value,
-                availability_status: document.getElementById('itemAvailability').value
-            };
-
-            console.log('Sending data:', formData); // Debug log
-
-            try {
-                console.log('Making POST request to add menu item...');
-                const response = await fetch('http://localhost:3000/api/admin/menu', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                console.log('Response status:', response.status);
-                const data = await response.json();
-                console.log('Response data:', data);
-
-                if (response.ok) {
-                    alert('Menu item added successfully!');
-                    document.getElementById('menuForm').reset();
-                    await fetchMenuItems(); // Refresh the table
-                } else {
-                    throw new Error(data.error || data.message || 'Failed to add menu item');
-                }
-            } catch (error) {
-                console.error('Error adding menu item:', error);
-                console.error('Error details:', {
-                    message: error.message,
-                    stack: error.stack
-                });
-                alert('Error adding menu item: ' + error.message);
-            }
-        });
 
         // Open edit modal
         function openEditModal(itemId) {

@@ -136,17 +136,59 @@ const adminController = {
             connection = await oracledb.getConnection();
             
             const result = await connection.execute(
-                `SELECT o.*, c.name as customer_name, c.email as customer_email, 
-                        m.item_name, m.price
+                `SELECT DISTINCT o.order_id, o.customer_id, o.total_price, o.order_status, o.order_date,
+                        c.name as customer_name, c.email as customer_email,
+                        i.menu_id, i.quantity, i.price as item_price,
+                        m.item_name, m.description, m.category
                  FROM orders o
-                 JOIN customer c ON o.customer_id = c.customer_id
-                 JOIN menu m ON o.menu_id = m.menu_id
+                 LEFT JOIN customer c ON o.customer_id = c.customer_id
+                 LEFT JOIN (
+                    SELECT item_id, menu_id, quantity, price
+                    FROM items
+                 ) i ON i.item_id = o.item_id
+                 LEFT JOIN menu m ON m.menu_id = i.menu_id
                  ORDER BY o.order_date DESC`,
                 [],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
             );
 
-            res.json(result.rows);
+            console.log('Raw query result:', result.rows[0]);
+
+            // Group orders by order_id and handle multiple items
+            const ordersMap = new Map();
+            
+            result.rows.forEach(row => {
+                const orderId = row.ORDER_ID;
+                if (!ordersMap.has(orderId)) {
+                    ordersMap.set(orderId, {
+                        ORDER_ID: orderId,
+                        CUSTOMER_ID: row.CUSTOMER_ID,
+                        CUSTOMER_NAME: row.CUSTOMER_NAME,
+                        CUSTOMER_EMAIL: row.CUSTOMER_EMAIL,
+                        TOTAL_PRICE: row.TOTAL_PRICE,
+                        ORDER_STATUS: row.ORDER_STATUS,
+                        ORDER_DATE: row.ORDER_DATE,
+                        ITEMS: []
+                    });
+                }
+                
+                // Only add item if we have menu data
+                if (row.MENU_ID && row.ITEM_NAME) {
+                    ordersMap.get(orderId).ITEMS.push({
+                        MENU_ID: row.MENU_ID,
+                        ITEM_NAME: row.ITEM_NAME,
+                        CATEGORY: row.CATEGORY,
+                        QUANTITY: row.QUANTITY,
+                        PRICE: row.ITEM_PRICE,
+                        DESCRIPTION: row.DESCRIPTION
+                    });
+                }
+            });
+
+            // Convert map to array
+            const formattedOrders = Array.from(ordersMap.values());
+            console.log('Formatted order:', JSON.stringify(formattedOrders[0], null, 2));
+            res.json(formattedOrders);
         } catch (error) {
             console.error('Error fetching orders:', error);
             res.status(500).json({ error: 'Error fetching orders' });
@@ -171,10 +213,12 @@ const adminController = {
             const result = await connection.execute(
                 `SELECT o.*, c.name as customer_name, c.email as customer_email, 
                         c.phone_number, c.address,
+                        i.item_id, i.quantity,
                         m.item_name, m.price, m.description
                  FROM orders o
                  JOIN customer c ON o.customer_id = c.customer_id
-                 JOIN menu m ON o.menu_id = m.menu_id
+                 JOIN items i ON o.item_id = i.item_id
+                 JOIN menu m ON i.menu_id = m.menu_id
                  WHERE o.order_id = :1`,
                 [orderId],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -184,7 +228,27 @@ const adminController = {
                 return res.status(404).json({ error: 'Order not found' });
             }
 
-            res.json(result.rows[0]);
+            // Format the response to include all items with their quantities
+            const order = {
+                ORDER_ID: result.rows[0].ORDER_ID,
+                CUSTOMER_ID: result.rows[0].CUSTOMER_ID,
+                CUSTOMER_NAME: result.rows[0].CUSTOMER_NAME,
+                CUSTOMER_EMAIL: result.rows[0].CUSTOMER_EMAIL,
+                PHONE_NUMBER: result.rows[0].PHONE_NUMBER,
+                ADDRESS: result.rows[0].ADDRESS,
+                TOTAL_PRICE: result.rows[0].TOTAL_PRICE,
+                ORDER_STATUS: result.rows[0].ORDER_STATUS,
+                ORDER_DATE: result.rows[0].ORDER_DATE,
+                ITEMS: result.rows.map(row => ({
+                    ITEM_ID: row.ITEM_ID,
+                    ITEM_NAME: row.ITEM_NAME,
+                    QUANTITY: row.QUANTITY,
+                    PRICE: row.PRICE,
+                    DESCRIPTION: row.DESCRIPTION
+                }))
+            };
+
+            res.json(order);
         } catch (error) {
             console.error('Error fetching order details:', error);
             res.status(500).json({ error: 'Error fetching order details' });
@@ -207,8 +271,6 @@ const adminController = {
             const { orderId } = req.params;
             const { status } = req.body;
 
-            console.log('Updating order status:', { orderId, status });
-
             // Validate status
             const validStatuses = ['Pending', 'Processing', 'Completed', 'Cancelled'];
             if (!validStatuses.includes(status)) {
@@ -217,7 +279,7 @@ const adminController = {
 
             // Get current order status
             const currentStatusResult = await connection.execute(
-                'SELECT order_status FROM orders WHERE order_id = :1',
+                `SELECT order_status FROM orders WHERE order_id = :1`,
                 [orderId],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
             );
@@ -227,14 +289,23 @@ const adminController = {
             }
 
             const currentStatus = currentStatusResult.rows[0].ORDER_STATUS;
-            console.log('Current status:', currentStatus);
+
+            // Validate status transition
+            if (status === 'Processing' && currentStatus !== 'Pending') {
+                return res.status(400).json({ error: 'Only Pending orders can be moved to Processing' });
+            }
+
+            if (status === 'Completed' && currentStatus !== 'Processing') {
+                return res.status(400).json({ error: 'Only Processing orders can be completed' });
+            }
+
+            if (status === 'Cancelled' && currentStatus === 'Completed') {
+                return res.status(400).json({ error: 'Completed orders cannot be cancelled' });
+            }
 
             // Update order status
-            const updateQuery = `UPDATE orders SET order_status = :1 WHERE order_id = :2`;
-            console.log('Executing update query:', updateQuery, { status, orderId });
-            
             const result = await connection.execute(
-                updateQuery,
+                `UPDATE orders SET order_status = :1 WHERE order_id = :2`,
                 [status, orderId]
             );
 
@@ -242,47 +313,19 @@ const adminController = {
                 return res.status(404).json({ error: 'Order not found' });
             }
 
-            // Check if delivery record exists
-            const deliveryCheck = await connection.execute(
-                'SELECT delivery_status FROM deliveries WHERE order_id = :1',
-                [orderId],
-                { outFormat: oracledb.OUT_FORMAT_OBJECT }
-            );
-
-            // Handle delivery status based on order status
-            if (deliveryCheck.rows.length > 0) {
-                const currentDeliveryStatus = deliveryCheck.rows[0].DELIVERY_STATUS;
-                let newDeliveryStatus = currentDeliveryStatus;
-
-                if (status === 'Completed') {
-                    newDeliveryStatus = 'Delivered';
-                } else if (status === 'Cancelled') {
-                    newDeliveryStatus = 'Cancelled';
-                } else if (status === 'Processing') {
-                    newDeliveryStatus = 'In Progress';
-                }
-
-                if (newDeliveryStatus !== currentDeliveryStatus) {
-                    const deliveryUpdateQuery = `UPDATE deliveries SET delivery_status = :1 WHERE order_id = :2`;
-                    console.log('Updating delivery status:', { newDeliveryStatus, orderId });
-                    
-                    await connection.execute(
-                        deliveryUpdateQuery,
-                        [newDeliveryStatus, orderId]
-                    );
-                }
-            } else if (status === 'Processing') {
-                // Create new delivery record only if moving to Processing
-                const deliveryIdQuery = `SELECT 'D' || LPAD(NVL(MAX(TO_NUMBER(SUBSTR(delivery_id, 2))), 0) + 1, 4, '0') as new_id FROM deliveries`;
-                const deliveryIdResult = await connection.execute(deliveryIdQuery);
-                const delivery_id = deliveryIdResult.rows[0][0];
-
-                const insertDeliveryQuery = `INSERT INTO deliveries (delivery_id, order_id, delivery_status, delivery_time) VALUES (:1, :2, 'In Progress', SYSTIMESTAMP)`;
-                console.log('Creating new delivery record:', { delivery_id, orderId });
-                
+            // If order is completed, update delivery status
+            if (status === 'Completed') {
                 await connection.execute(
-                    insertDeliveryQuery,
-                    [delivery_id, orderId]
+                    `UPDATE deliveries SET delivery_status = 'Delivered' WHERE order_id = :1`,
+                    [orderId]
+                );
+            }
+
+            // If order is cancelled, update delivery status
+            if (status === 'Cancelled') {
+                await connection.execute(
+                    `UPDATE deliveries SET delivery_status = 'Cancelled' WHERE order_id = :1`,
+                    [orderId]
                 );
             }
 
@@ -649,17 +692,6 @@ const adminController = {
         try {
             connection = await oracledb.getConnection();
             
-            // First, let's check the actual table structure
-            const tableCheck = await connection.execute(
-                `SELECT column_name, data_type 
-                 FROM user_tab_columns 
-                 WHERE table_name = 'MENU'`,
-                [],
-                { outFormat: oracledb.OUT_FORMAT_OBJECT }
-            );
-            console.log('Actual table structure:', tableCheck.rows);
-
-            // Now try to get the menu items with the correct column names
             const result = await connection.execute(
                 `SELECT menu_id as "ITEM_ID", 
                         item_name as "ITEM_NAME", 
@@ -673,7 +705,6 @@ const adminController = {
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
             );
 
-            console.log('Query result:', result.rows);
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching menu items:', error);
@@ -682,75 +713,6 @@ const adminController = {
             if (connection) {
                 try {
                     await connection.close();
-                } catch (closeError) {
-                    console.error('Error closing connection:', closeError);
-                }
-            }
-        }
-    },
-
-    // Add new menu item
-    addMenuItem: async (req, res) => {
-        let connection;
-        try {
-            console.log('Received request to add menu item:', req.body);
-            connection = await oracledb.getConnection();
-            const { name, description, price, category, image_link, availability_status } = req.body;
-
-            // Validate required fields
-            if (!name || !description || !price || !category) {
-                return res.status(400).json({ error: 'Missing required fields' });
-            }
-
-            // Generate a new menu_id
-            const result = await connection.execute(
-                'SELECT MAX(TO_NUMBER(SUBSTR(menu_id, 2))) as max_id FROM menu'
-            );
-            console.log('Generated ID result:', result);
-            const maxId = result.rows[0][0] || 0;
-            const newMenuId = `M${String(maxId + 1).padStart(3, '0')}`;
-            console.log('New menu ID:', newMenuId);
-
-            // Insert the new menu item
-            const insertResult = await connection.execute(
-                `INSERT INTO menu (menu_id, item_name, description, price, category, image_link, availability_status) 
-                 VALUES (:1, :2, :3, :4, :5, :6, :7)`,
-                [newMenuId, name, description, price, category, image_link, availability_status || 'Available']
-            );
-            console.log('Insert result:', insertResult);
-
-            await connection.commit();
-            console.log('Transaction committed');
-
-            res.status(201).json({
-                message: 'Menu item added successfully',
-                itemId: newMenuId,
-                menuItem: {
-                    menu_id: newMenuId,
-                    item_name: name,
-                    description,
-                    price,
-                    category,
-                    image_link,
-                    availability_status: availability_status || 'Available'
-                }
-            });
-        } catch (error) {
-            console.error('Error adding menu item:', error);
-            if (connection) {
-                try {
-                    await connection.rollback();
-                    console.log('Transaction rolled back');
-                } catch (rollbackError) {
-                    console.error('Error rolling back transaction:', rollbackError);
-                }
-            }
-            res.status(500).json({ error: 'Error adding menu item: ' + error.message });
-        } finally {
-            if (connection) {
-                try {
-                    await connection.close();
-                    console.log('Database connection closed');
                 } catch (closeError) {
                     console.error('Error closing connection:', closeError);
                 }
@@ -780,31 +742,6 @@ const adminController = {
         } catch (error) {
             console.error('Error updating menu item:', error);
             res.status(500).json({ error: 'Error updating menu item' });
-        } finally {
-            if (connection) {
-                try {
-                    await connection.close();
-                } catch (closeError) {
-                    console.error('Error closing connection:', closeError);
-                }
-            }
-        }
-    },
-
-    // Delete menu item
-    deleteMenuItem: async (req, res) => {
-        let connection;
-        try {
-            connection = await oracledb.getConnection();
-            const { menuId } = req.params;
-
-            await connection.execute('DELETE FROM menu WHERE menu_id = :1', [menuId]);
-            await connection.commit();
-
-            res.json({ message: 'Menu item deleted successfully' });
-        } catch (error) {
-            console.error('Error deleting menu item:', error);
-            res.status(500).json({ error: 'Error deleting menu item' });
         } finally {
             if (connection) {
                 try {
@@ -941,29 +878,18 @@ const adminController = {
             connection = await oracledb.getConnection();
             const { employeeId } = req.params;
 
-            // First check if employee exists in delivery or chef tables
+            // First check if employee has any active deliveries
             const deliveryCheck = await connection.execute(
-                'SELECT 1 FROM delivery WHERE employee_id = :1',
+                `SELECT 1 FROM deliveries 
+                 WHERE delivery_person_id = :1 
+                 AND delivery_status = 'Out for Delivery'`,
                 [employeeId]
             );
 
             if (deliveryCheck.rows.length > 0) {
-                await connection.execute(
-                    'DELETE FROM delivery WHERE employee_id = :1',
-                    [employeeId]
-                );
-            }
-
-            const chefCheck = await connection.execute(
-                'SELECT 1 FROM chef WHERE employee_id = :1',
-                [employeeId]
-            );
-
-            if (chefCheck.rows.length > 0) {
-                await connection.execute(
-                    'DELETE FROM chef WHERE employee_id = :1',
-                    [employeeId]
-                );
+                return res.status(400).json({ 
+                    error: 'Cannot delete employee with active deliveries. Please reassign or complete the deliveries first.' 
+                });
             }
 
             // Now delete from employee table
@@ -980,6 +906,13 @@ const adminController = {
             res.json({ message: 'Employee deleted successfully' });
         } catch (error) {
             console.error('Error deleting employee:', error);
+            if (connection) {
+                try {
+                    await connection.rollback();
+                } catch (rollbackError) {
+                    console.error('Error rolling back transaction:', rollbackError);
+                }
+            }
             res.status(500).json({ error: 'Error deleting employee' });
         } finally {
             if (connection) {
@@ -1035,13 +968,18 @@ const adminController = {
                         c.name as customer_name, c.address, c.phone_number
                  FROM orders o
                  JOIN customer c ON o.customer_id = c.customer_id
-                 WHERE o.order_id NOT IN (SELECT order_id FROM deliveries)
-                 AND o.order_status = 'Pending'
+                 WHERE o.order_status = 'Pending'
+                 AND NOT EXISTS (
+                    SELECT 1 FROM deliveries d 
+                    WHERE d.order_id = o.order_id 
+                    AND d.delivery_status = 'Out for Delivery'
+                 )
                  ORDER BY o.order_date ASC`,
                 [],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
             );
 
+            console.log('Unassigned orders result:', result.rows);
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching unassigned orders:', error);
@@ -1064,16 +1002,15 @@ const adminController = {
             connection = await oracledb.getConnection();
             
             const result = await connection.execute(
-                `SELECT d.delivery_id, d.employee_id, d.rating,
-                        e.name, e.phone_number
-                 FROM delivery d
-                 JOIN employee e ON d.employee_id = e.employee_id
-                 WHERE d.delivery_id NOT IN (
+                `SELECT e.employee_id, e.name, e.phone_number
+                 FROM employee e
+                 WHERE e.role = 'Delivery'
+                 AND e.employee_id NOT IN (
                     SELECT delivery_person_id 
                     FROM deliveries 
                     WHERE delivery_status = 'Out for Delivery'
                  )
-                 ORDER BY d.rating DESC`,
+                 ORDER BY e.name`,
                 [],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
             );
@@ -1100,6 +1037,45 @@ const adminController = {
             connection = await oracledb.getConnection();
             const { order_id, delivery_person_id } = req.body;
 
+            // Start transaction
+            await connection.execute('BEGIN');
+
+            // Check if order is in valid state for assignment
+            const orderCheck = await connection.execute(
+                `SELECT order_status FROM orders WHERE order_id = :1`,
+                [order_id],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            if (orderCheck.rows.length === 0) {
+                await connection.rollback();
+                return res.status(404).json({ error: 'Order not found' });
+            }
+
+            if (orderCheck.rows[0].ORDER_STATUS !== 'Pending') {
+                await connection.rollback();
+                return res.status(400).json({ error: 'Order must be in Pending status to assign delivery person' });
+            }
+
+            // Check if delivery person is available
+            const deliveryPersonCheck = await connection.execute(
+                `SELECT 1 FROM employee 
+                 WHERE employee_id = :1 
+                 AND role = 'Delivery'
+                 AND employee_id NOT IN (
+                    SELECT delivery_person_id 
+                    FROM deliveries 
+                    WHERE delivery_status = 'Out for Delivery'
+                 )`,
+                [delivery_person_id],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            if (deliveryPersonCheck.rows.length === 0) {
+                await connection.rollback();
+                return res.status(400).json({ error: 'Delivery person not available or invalid' });
+            }
+
             // Generate a unique delivery_id
             const deliveryIdResult = await connection.execute(
                 `SELECT 'D' || LPAD(NVL(MAX(TO_NUMBER(SUBSTR(delivery_id, 2))), 0) + 1, 4, '0') as new_id 
@@ -1125,8 +1101,7 @@ const adminController = {
             await connection.execute(
                 `UPDATE orders 
                  SET order_status = 'Processing'
-                 WHERE order_id = :1
-                 AND order_status = 'Pending'`,
+                 WHERE order_id = :1`,
                 [order_id]
             );
 
@@ -1172,15 +1147,14 @@ const adminController = {
                  FROM deliveries d
                  JOIN orders o ON d.order_id = o.order_id
                  JOIN customer c ON o.customer_id = c.customer_id
-                 JOIN delivery dl ON d.delivery_person_id = dl.delivery_id
-                 JOIN employee e ON dl.employee_id = e.employee_id
+                 JOIN employee e ON d.delivery_person_id = e.employee_id
                  WHERE d.delivery_status = 'Out for Delivery'
-                 AND o.order_status = 'Processing'
                  ORDER BY d.delivery_time DESC`,
                 [],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
             );
 
+            console.log('Active deliveries result:', result.rows);
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching active deliveries:', error);
