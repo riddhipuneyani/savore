@@ -171,10 +171,10 @@
             <span class="close-modal">&times;</span>
             <h2>Update Order Status</h2>
             <select id="newStatus">
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="Pending">Pending</option>
+                <option value="Processing">Processing</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
             </select>
             <button class="action-btn process" onclick="saveOrderStatus()">Save Changes</button>
         </div>
@@ -218,6 +218,7 @@
 
             orders.forEach(order => {
                 const row = document.createElement('tr');
+                row.setAttribute('data-order-id', order.ORDER_ID);
                 row.innerHTML = `
                     <td>#${order.ORDER_ID}</td>
                     <td>${order.CUSTOMER_NAME}</td>
@@ -284,11 +285,41 @@
             modal.style.display = 'block';
         }
 
+        // Validate status transition
+        function validateStatusTransition(currentStatus, newStatus) {
+            // Define valid status transitions
+            const validTransitions = {
+                'Pending': ['Processing', 'Cancelled'],
+                'Processing': ['Completed', 'Cancelled'],
+                'Completed': [],  // Once completed, no further changes
+                'Cancelled': []   // Once cancelled, no further changes
+            };
+
+            // If current status is not in the map, allow any transition
+            if (!validTransitions[currentStatus]) {
+                return true;
+            }
+
+            // Allow transition if new status is in the valid transitions array
+            return validTransitions[currentStatus].includes(newStatus);
+        }
+
         // Save order status
         async function saveOrderStatus() {
             if (!currentOrderId) return;
 
             const newStatus = document.getElementById('newStatus').value;
+            const currentStatus = document.querySelector(`tr[data-order-id="${currentOrderId}"] .status`).textContent;
+            
+            console.log('Current Status:', currentStatus);
+            console.log('New Status:', newStatus);
+            
+            // Validate status transition
+            if (!validateStatusTransition(currentStatus, newStatus)) {
+                alert('Invalid status transition. Please check the order status flow.');
+                return;
+            }
+
             try {
                 const response = await fetch(`http://localhost:3000/api/admin/orders/${currentOrderId}/status`, {
                     method: 'PUT',
@@ -304,15 +335,17 @@
                     return;
                 }
 
-                if (response.ok) {
-                    document.getElementById('statusModal').style.display = 'none';
-                    fetchOrders(); // Refresh the orders list
-                } else {
-                    throw new Error('Failed to update status');
+                const responseData = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(responseData.error || 'Failed to update status');
                 }
+
+                document.getElementById('statusModal').style.display = 'none';
+                fetchOrders(); // Refresh the orders list
             } catch (error) {
                 console.error('Error updating order status:', error);
-                alert('Error updating order status. Please try again.');
+                alert('Error updating order status: ' + error.message);
             }
         }
 

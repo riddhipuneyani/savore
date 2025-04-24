@@ -207,16 +207,34 @@ const adminController = {
             const { orderId } = req.params;
             const { status } = req.body;
 
+            console.log('Updating order status:', { orderId, status });
+
             // Validate status
             const validStatuses = ['Pending', 'Processing', 'Completed', 'Cancelled'];
             if (!validStatuses.includes(status)) {
                 return res.status(400).json({ error: 'Invalid status' });
             }
 
+            // Get current order status
+            const currentStatusResult = await connection.execute(
+                'SELECT order_status FROM orders WHERE order_id = :1',
+                [orderId],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            if (currentStatusResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Order not found' });
+            }
+
+            const currentStatus = currentStatusResult.rows[0].ORDER_STATUS;
+            console.log('Current status:', currentStatus);
+
+            // Update order status
+            const updateQuery = `UPDATE orders SET order_status = :1 WHERE order_id = :2`;
+            console.log('Executing update query:', updateQuery, { status, orderId });
+            
             const result = await connection.execute(
-                `UPDATE orders 
-                 SET order_status = :1 
-                 WHERE order_id = :2`,
+                updateQuery,
                 [status, orderId]
             );
 
@@ -224,11 +242,63 @@ const adminController = {
                 return res.status(404).json({ error: 'Order not found' });
             }
 
+            // Check if delivery record exists
+            const deliveryCheck = await connection.execute(
+                'SELECT delivery_status FROM deliveries WHERE order_id = :1',
+                [orderId],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            // Handle delivery status based on order status
+            if (deliveryCheck.rows.length > 0) {
+                const currentDeliveryStatus = deliveryCheck.rows[0].DELIVERY_STATUS;
+                let newDeliveryStatus = currentDeliveryStatus;
+
+                if (status === 'Completed') {
+                    newDeliveryStatus = 'Delivered';
+                } else if (status === 'Cancelled') {
+                    newDeliveryStatus = 'Cancelled';
+                } else if (status === 'Processing') {
+                    newDeliveryStatus = 'In Progress';
+                }
+
+                if (newDeliveryStatus !== currentDeliveryStatus) {
+                    const deliveryUpdateQuery = `UPDATE deliveries SET delivery_status = :1 WHERE order_id = :2`;
+                    console.log('Updating delivery status:', { newDeliveryStatus, orderId });
+                    
+                    await connection.execute(
+                        deliveryUpdateQuery,
+                        [newDeliveryStatus, orderId]
+                    );
+                }
+            } else if (status === 'Processing') {
+                // Create new delivery record only if moving to Processing
+                const deliveryIdQuery = `SELECT 'D' || LPAD(NVL(MAX(TO_NUMBER(SUBSTR(delivery_id, 2))), 0) + 1, 4, '0') as new_id FROM deliveries`;
+                const deliveryIdResult = await connection.execute(deliveryIdQuery);
+                const delivery_id = deliveryIdResult.rows[0][0];
+
+                const insertDeliveryQuery = `INSERT INTO deliveries (delivery_id, order_id, delivery_status, delivery_time) VALUES (:1, :2, 'In Progress', SYSTIMESTAMP)`;
+                console.log('Creating new delivery record:', { delivery_id, orderId });
+                
+                await connection.execute(
+                    insertDeliveryQuery,
+                    [delivery_id, orderId]
+                );
+            }
+
+            // Commit the transaction
             await connection.commit();
             res.json({ message: 'Order status updated successfully' });
         } catch (error) {
             console.error('Error updating order status:', error);
-            res.status(500).json({ error: 'Error updating order status' });
+            if (connection) {
+                try {
+                    await connection.rollback();
+                } catch (rollbackError) {
+                    console.error('Error rolling back transaction:', rollbackError);
+                }
+            }
+            res.status(500).json({ error: 'Error updating order status: ' + error.message });
         } finally {
             if (connection) {
                 try {
@@ -966,7 +1036,7 @@ const adminController = {
                  FROM orders o
                  JOIN customer c ON o.customer_id = c.customer_id
                  WHERE o.order_id NOT IN (SELECT order_id FROM deliveries)
-                 AND o.order_status = 'Processing'
+                 AND o.order_status = 'Pending'
                  ORDER BY o.order_date ASC`,
                 [],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -1051,11 +1121,12 @@ const adminController = {
                 [delivery_id, order_id, delivery_person_id]
             );
 
-            // Update order status
+            // Update order status to Processing when assigned
             await connection.execute(
                 `UPDATE orders 
                  SET order_status = 'Processing'
-                 WHERE order_id = :1`,
+                 WHERE order_id = :1
+                 AND order_status = 'Pending'`,
                 [order_id]
             );
 
@@ -1095,7 +1166,7 @@ const adminController = {
             const result = await connection.execute(
                 `SELECT d.delivery_id, d.order_id, d.delivery_person_id, 
                         d.delivery_status, d.delivery_time,
-                        o.customer_id, o.total_price,
+                        o.customer_id, o.total_price, o.order_status,
                         c.name as customer_name, c.address, c.phone_number,
                         e.name as delivery_person_name, e.phone_number as delivery_person_phone
                  FROM deliveries d
@@ -1104,6 +1175,7 @@ const adminController = {
                  JOIN delivery dl ON d.delivery_person_id = dl.delivery_id
                  JOIN employee e ON dl.employee_id = e.employee_id
                  WHERE d.delivery_status = 'Out for Delivery'
+                 AND o.order_status = 'Processing'
                  ORDER BY d.delivery_time DESC`,
                 [],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -1123,6 +1195,6 @@ const adminController = {
             }
         }
     }
-};
+    };
 
 module.exports = adminController; 

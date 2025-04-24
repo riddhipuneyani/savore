@@ -219,11 +219,11 @@
                 }
 
                 menuItems = await response.json();
-                renderMenu();
+            renderMenu();
             } catch (error) {
                 console.error('Error fetching menu items:', error);
                 alert('Error fetching menu items. Please try again.');
-            }
+        }
         }
 
         // Render menu items
