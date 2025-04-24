@@ -42,6 +42,12 @@ router.post('/employees', adminController.addEmployee);
 router.put('/employees/:employeeId', adminController.updateEmployee);
 router.delete('/employees/:employeeId', adminController.deleteEmployee);
 
+// Delivery management routes
+router.get('/unassigned-orders', adminController.getUnassignedOrders);
+router.get('/available-delivery-persons', adminController.getAvailableDeliveryPersons);
+router.get('/active-deliveries', adminController.getActiveDeliveries);
+router.post('/assign-delivery', adminController.assignDeliveryPerson);
+
 // Add more protected admin routes here
 // Example:
 // router.get('/orders', adminController.getOrders);

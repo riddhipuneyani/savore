@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Management - Admin Dashboard</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .card {
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .order-card:hover {
+            cursor: pointer;
+            background-color: #f8f9fa;
+        }
+        .selected-order {
+            border: 2px solid #0d6efd;
+            background-color: #f8f9fa;
+        }
+        .delivery-person-card:hover {
+            cursor: pointer;
+            background-color: #f8f9fa;
+        }
+        .selected-delivery-person {
+            border: 2px solid #198754;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../images/savore_logo_new.png" alt="Savore Logo" class="admin-logo">
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="admin-dashboard.html">
+                        <i class="fas fa-home"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="menu_management.html">
+                        <i class="fas fa-utensils"></i>
+                        Menu Management
+                    </a>
+                </li>
+                <li>
+                    <a href="employee_management.html">
+                        <i class="fas fa-users-cog"></i>
+                        Employee Management
+                    </a>
+                </li>
+                <li>
+                    <a href="adminorders.html">
+                        <i class="fas fa-shopping-cart"></i>
+                        Orders
+                    </a>
+                </li>
+                <li>
+                    <a href="delivery-management.html" class="active">
+                        <i class="fas fa-truck"></i>
+                        Delivery Management
+                    </a>
+                </li>
+                <li>
+                    <a href="customers.html">
+                        <i class="fas fa-users"></i>
+                        Customers
+                    </a>
+                </li>
+                <li>
+                    <a href="analytics.html">
+                        <i class="fas fa-chart-bar"></i>
+                        Analytics
+                    </a>
+                </li>
+                <li>
+                    <a href="settings.html">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <header class="dashboard-header">
+                <h1 class="dashboard-title">Delivery Management</h1>
+                <div class="user-profile">
+                    <img src="../images/user-icon.png" alt="Admin Profile">
+                    <span id="adminName">Loading...</span>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
+            </header>
+
+            <div class="container-fluid py-4">
+                <div class="row">
+                    <!-- Unassigned Orders -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="card-title mb-0">Unassigned Orders</h5>
+                            </div>
+                            <div class="card-body" id="unassignedOrders">
+                                <!-- Orders will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Available Delivery Persons -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="card-title mb-0">Available Delivery Persons</h5>
+                            </div>
+                            <div class="card-body" id="availableDeliveryPersons">
+                                <!-- Delivery persons will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Deliveries -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="card-title mb-0">Active Deliveries</h5>
+                            </div>
+                            <div class="card-body" id="activeDeliveries">
+                                <!-- Active deliveries will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assign Button -->
+                <div class="row mt-3">
+                    <div class="col-md-8">
+                        <button id="assignButton" class="btn btn-primary" disabled>
+                            Assign Delivery Person
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('adminToken');
+            const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+
+            if (!token || !adminData) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            // Display admin name
+            document.getElementById('adminName').textContent = adminData.name;
+
+            // Add logout functionality
+            const logoutBtn = document.getElementById('logoutBtn');
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if(confirm('Are you sure you want to logout?')) {
+                    // Clear admin data
+                    localStorage.removeItem('adminToken');
+                    localStorage.removeItem('adminData');
+                    // Redirect to login page
+                    window.location.href = 'admin-login.html';
+                }
+            });
+
+            // Initialize delivery management
+            loadUnassignedOrders();
+            loadAvailableDeliveryPersons();
+            loadActiveDeliveries();
+            document.getElementById('assignButton').addEventListener('click', assignDelivery);
+        });
+
+        let selectedOrder = null;
+        let selectedDeliveryPerson = null;
+        const API_BASE_URL = 'http://localhost:3000/api/admin';
+
+        // Load unassigned orders
+        async function loadUnassignedOrders() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`${API_BASE_URL}/unassigned-orders`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const orders = await response.json();
+                
+                const ordersHtml = orders.map(order => `
+                    <div class="card order-card mb-2" data-order-id="${order.ORDER_ID}">
+                        <div class="card-body">
+                            <h6 class="card-title">Order #${order.ORDER_ID}</h6>
+                            <p class="card-text">
+                                <strong>Customer:</strong> ${order.CUSTOMER_NAME}<br>
+                                <strong>Address:</strong> ${order.ADDRESS}<br>
+                                <strong>Total:</strong> ₹${order.TOTAL_PRICE}<br>
+                                <strong>Date:</strong> ${new Date(order.ORDER_DATE).toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('unassignedOrders').innerHTML = ordersHtml;
+                
+                // Add click event listeners
+                document.querySelectorAll('.order-card').forEach(card => {
+                    card.addEventListener('click', () => selectOrder(card));
+                });
+            } catch (error) {
+                console.error('Error loading unassigned orders:', error);
+            }
+        }
+
+        // Load available delivery persons
+        async function loadAvailableDeliveryPersons() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`${API_BASE_URL}/available-delivery-persons`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const deliveryPersons = await response.json();
+                
+                const deliveryPersonsHtml = deliveryPersons.map(person => `
+                    <div class="card delivery-person-card mb-2" data-delivery-id="${person.DELIVERY_ID}">
+                        <div class="card-body">
+                            <h6 class="card-title">${person.NAME}</h6>
+                            <p class="card-text">
+                                <strong>Phone:</strong> ${person.PHONE_NUMBER}<br>
+                                <strong>Rating:</strong> ${person.RATING} ⭐<br>
+                            </p>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('availableDeliveryPersons').innerHTML = deliveryPersonsHtml;
+                
+                // Add click event listeners
+                document.querySelectorAll('.delivery-person-card').forEach(card => {
+                    card.addEventListener('click', () => selectDeliveryPerson(card));
+                });
+            } catch (error) {
+                console.error('Error loading delivery persons:', error);
+            }
+        }
+
+        // Load active deliveries
+        async function loadActiveDeliveries() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`${API_BASE_URL}/active-deliveries`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const deliveries = await response.json();
+                
+                const deliveriesHtml = deliveries.map(delivery => `
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <h6 class="card-title">Delivery #${delivery.DELIVERY_ID}</h6>
+                            <p class="card-text">
+                                <strong>Order:</strong> #${delivery.ORDER_ID}<br>
+                                <strong>Customer:</strong> ${delivery.CUSTOMER_NAME}<br>
+                                <strong>Delivery Person:</strong> ${delivery.DELIVERY_PERSON_NAME}<br>
+                                <strong>Status:</strong> ${delivery.DELIVERY_STATUS}<br>
+                                <strong>Time:</strong> ${new Date(delivery.DELIVERY_TIME).toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('activeDeliveries').innerHTML = deliveriesHtml;
+            } catch (error) {
+                console.error('Error loading active deliveries:', error);
+            }
+        }
+
+        // Select order
+        function selectOrder(card) {
+            document.querySelectorAll('.order-card').forEach(c => c.classList.remove('selected-order'));
+            card.classList.add('selected-order');
+            selectedOrder = card.dataset.orderId;
+            updateAssignButton();
+        }
+
+        // Select delivery person
+        function selectDeliveryPerson(card) {
+            document.querySelectorAll('.delivery-person-card').forEach(c => c.classList.remove('selected-delivery-person'));
+            card.classList.add('selected-delivery-person');
+            selectedDeliveryPerson = card.dataset.deliveryId;
+            updateAssignButton();
+        }
+
+        // Update assign button state
+        function updateAssignButton() {
+            const assignButton = document.getElementById('assignButton');
+            assignButton.disabled = !(selectedOrder && selectedDeliveryPerson);
+        }
+
+        // Assign delivery person to order
+        async function assignDelivery() {
+            if (!selectedOrder || !selectedDeliveryPerson) return;
+
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`${API_BASE_URL}/assign-delivery`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        order_id: selectedOrder,
+                        delivery_person_id: selectedDeliveryPerson
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Show success message
+                    alert('Delivery person assigned successfully!');
+                    
+                    // Reset selections
+                    selectedOrder = null;
+                    selectedDeliveryPerson = null;
+                    document.querySelectorAll('.selected-order, .selected-delivery-person')
+                        .forEach(el => el.classList.remove('selected-order', 'selected-delivery-person'));
+                    updateAssignButton();
+
+                    // Reload all data
+                    await Promise.all([
+                        loadUnassignedOrders(),
+                        loadAvailableDeliveryPersons(),
+                        loadActiveDeliveries()
+                    ]);
+                } else {
+                    throw new Error(data.error || 'Failed to assign delivery');
+                }
+            } catch (error) {
+                console.error('Error assigning delivery:', error);
+                alert(`Failed to assign delivery: ${error.message}`);
+            }
+        }
+
+        // Refresh data every 30 seconds
+        setInterval(() => {
+            loadUnassignedOrders();
+            loadAvailableDeliveryPersons();
+            loadActiveDeliveries();
+        }, 30000);
+    </script>
+</body>
+</html> 
