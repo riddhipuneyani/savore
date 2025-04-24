@@ -58,6 +58,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="delivery-management.html">
+                        <i class="fas fa-truck"></i>
+                        Delivery Management
+                    </a>
+                </li>
+                <li>
                     <a href="customers.html">
                         <i class="fas fa-users"></i>
                         Customers
@@ -322,11 +328,13 @@
                         return;
                     }
 
+                    const data = await response.json();
+
                     if (response.ok) {
-                        alert('Employee deleted successfully!');
-                        fetchEmployees();
+                        alert(data.message);
+                        fetchEmployees(); // Refresh the employees list
                     } else {
-                        throw new Error('Failed to delete employee');
+                        alert(data.error || 'Failed to delete employee');
                     }
                 } catch (error) {
                     console.error('Error deleting employee:', error);

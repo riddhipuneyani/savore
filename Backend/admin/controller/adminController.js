@@ -623,23 +623,34 @@ const adminController = {
     addMenuItem: async (req, res) => {
         let connection;
         try {
+            console.log('Received request to add menu item:', req.body);
             connection = await oracledb.getConnection();
             const { name, description, price, category, image_link, availability_status } = req.body;
+
+            // Validate required fields
+            if (!name || !description || !price || !category) {
+                return res.status(400).json({ error: 'Missing required fields' });
+            }
 
             // Generate a new menu_id
             const result = await connection.execute(
                 'SELECT MAX(TO_NUMBER(SUBSTR(menu_id, 2))) as max_id FROM menu'
             );
+            console.log('Generated ID result:', result);
             const maxId = result.rows[0][0] || 0;
             const newMenuId = `M${String(maxId + 1).padStart(3, '0')}`;
+            console.log('New menu ID:', newMenuId);
 
-            await connection.execute(
+            // Insert the new menu item
+            const insertResult = await connection.execute(
                 `INSERT INTO menu (menu_id, item_name, description, price, category, image_link, availability_status) 
                  VALUES (:1, :2, :3, :4, :5, :6, :7)`,
                 [newMenuId, name, description, price, category, image_link, availability_status || 'Available']
             );
+            console.log('Insert result:', insertResult);
 
             await connection.commit();
+            console.log('Transaction committed');
 
             res.status(201).json({
                 message: 'Menu item added successfully',
@@ -656,11 +667,20 @@ const adminController = {
             });
         } catch (error) {
             console.error('Error adding menu item:', error);
-            res.status(500).json({ error: 'Error adding menu item' });
+            if (connection) {
+                try {
+                    await connection.rollback();
+                    console.log('Transaction rolled back');
+                } catch (rollbackError) {
+                    console.error('Error rolling back transaction:', rollbackError);
+                }
+            }
+            res.status(500).json({ error: 'Error adding menu item: ' + error.message });
         } finally {
             if (connection) {
                 try {
                     await connection.close();
+                    console.log('Database connection closed');
                 } catch (closeError) {
                     console.error('Error closing connection:', closeError);
                 }
@@ -923,6 +943,176 @@ const adminController = {
         } catch (error) {
             console.error('Error fetching employee:', error);
             res.status(500).json({ error: 'Error fetching employee' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Get all unassigned orders
+    getUnassignedOrders: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            
+            const result = await connection.execute(
+                `SELECT o.order_id, o.customer_id, o.total_price, o.order_status, o.order_date,
+                        c.name as customer_name, c.address, c.phone_number
+                 FROM orders o
+                 JOIN customer c ON o.customer_id = c.customer_id
+                 WHERE o.order_id NOT IN (SELECT order_id FROM deliveries)
+                 AND o.order_status = 'Processing'
+                 ORDER BY o.order_date ASC`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching unassigned orders:', error);
+            res.status(500).json({ error: 'Error fetching unassigned orders' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Get all available delivery persons
+    getAvailableDeliveryPersons: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            
+            const result = await connection.execute(
+                `SELECT d.delivery_id, d.employee_id, d.rating,
+                        e.name, e.phone_number
+                 FROM delivery d
+                 JOIN employee e ON d.employee_id = e.employee_id
+                 WHERE d.delivery_id NOT IN (
+                    SELECT delivery_person_id 
+                    FROM deliveries 
+                    WHERE delivery_status = 'Out for Delivery'
+                 )
+                 ORDER BY d.rating DESC`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching available delivery persons:', error);
+            res.status(500).json({ error: 'Error fetching available delivery persons' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Assign delivery person to order
+    assignDeliveryPerson: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            const { order_id, delivery_person_id } = req.body;
+
+            // Generate a unique delivery_id
+            const deliveryIdResult = await connection.execute(
+                `SELECT 'D' || LPAD(NVL(MAX(TO_NUMBER(SUBSTR(delivery_id, 2))), 0) + 1, 4, '0') as new_id 
+                 FROM deliveries`
+            );
+            const delivery_id = deliveryIdResult.rows[0][0];
+
+            // Insert into deliveries table
+            await connection.execute(
+                `INSERT INTO deliveries (
+                    delivery_id, 
+                    order_id, 
+                    delivery_person_id, 
+                    delivery_status, 
+                    delivery_time
+                ) VALUES (
+                    :1, :2, :3, 'Out for Delivery', SYSTIMESTAMP
+                )`,
+                [delivery_id, order_id, delivery_person_id]
+            );
+
+            // Update order status
+            await connection.execute(
+                `UPDATE orders 
+                 SET order_status = 'Processing'
+                 WHERE order_id = :1`,
+                [order_id]
+            );
+
+            await connection.commit();
+
+            res.json({ 
+                message: 'Delivery person assigned successfully',
+                delivery_id: delivery_id
+            });
+        } catch (error) {
+            console.error('Error assigning delivery person:', error);
+            if (connection) {
+                try {
+                    await connection.rollback();
+                } catch (rollbackError) {
+                    console.error('Error rolling back transaction:', rollbackError);
+                }
+            }
+            res.status(500).json({ error: 'Error assigning delivery person' });
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeError) {
+                    console.error('Error closing connection:', closeError);
+                }
+            }
+        }
+    },
+
+    // Get all active deliveries
+    getActiveDeliveries: async (req, res) => {
+        let connection;
+        try {
+            connection = await oracledb.getConnection();
+            
+            const result = await connection.execute(
+                `SELECT d.delivery_id, d.order_id, d.delivery_person_id, 
+                        d.delivery_status, d.delivery_time,
+                        o.customer_id, o.total_price,
+                        c.name as customer_name, c.address, c.phone_number,
+                        e.name as delivery_person_name, e.phone_number as delivery_person_phone
+                 FROM deliveries d
+                 JOIN orders o ON d.order_id = o.order_id
+                 JOIN customer c ON o.customer_id = c.customer_id
+                 JOIN delivery dl ON d.delivery_person_id = dl.delivery_id
+                 JOIN employee e ON dl.employee_id = e.employee_id
+                 WHERE d.delivery_status = 'Out for Delivery'
+                 ORDER BY d.delivery_time DESC`,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching active deliveries:', error);
+            res.status(500).json({ error: 'Error fetching active deliveries' });
         } finally {
             if (connection) {
                 try {

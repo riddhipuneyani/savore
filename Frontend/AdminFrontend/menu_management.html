@@ -66,6 +66,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="delivery-management.html">
+                        <i class="fas fa-truck"></i>
+                        Delivery Management
+                    </a>
+                </li>
+                <li>
                     <a href="customers.html">
                         <i class="fas fa-users"></i>
                         Customers
@@ -117,7 +123,7 @@
                                 <option value="Drinks">Drinks</option>
                                 <option value="International">International</option>
                             </select>
-                            <input type="url" id="itemImageLink" placeholder="Image URL" required>
+                            <input type="text" id="itemImageLink" placeholder="Image Link" required>
                             <select id="itemAvailability" required>
                                 <option value="Available">Available</option>
                                 <option value="Not Available">Not Available</option>
@@ -176,7 +182,6 @@
                         <option value="Drinks">Drinks</option>
                         <option value="International">International</option>
                     </select>
-                    <input type="url" id="editItemImageLink" placeholder="Image URL" required>
                     <select id="editItemAvailability" required>
                         <option value="Available">Available</option>
                         <option value="Not Available">Not Available</option>
@@ -262,7 +267,10 @@
                 availability_status: document.getElementById('itemAvailability').value
             };
 
+            console.log('Sending data:', formData); // Debug log
+
             try {
+                console.log('Making POST request to add menu item...');
                 const response = await fetch('http://localhost:3000/api/admin/menu', {
                     method: 'POST',
                     headers: {
@@ -272,17 +280,24 @@
                     body: JSON.stringify(formData)
                 });
 
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+
                 if (response.ok) {
                     alert('Menu item added successfully!');
                     document.getElementById('menuForm').reset();
-                    fetchMenuItems(); // Refresh the table
+                    await fetchMenuItems(); // Refresh the table
                 } else {
-                    const error = await response.json();
-                    alert(error.message || 'Error adding menu item');
+                    throw new Error(data.error || data.message || 'Failed to add menu item');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                alert('Error adding menu item');
+                console.error('Error adding menu item:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack
+                });
+                alert('Error adding menu item: ' + error.message);
             }
         });
 
@@ -295,7 +310,6 @@
             document.getElementById('editItemName').value = item.ITEM_NAME;
             document.getElementById('editItemPrice').value = item.PRICE;
             document.getElementById('editItemCategory').value = item.CATEGORY;
-            document.getElementById('editItemImageLink').value = item.IMAGE_LINK;
             document.getElementById('editItemAvailability').value = item.AVAILABILITY_STATUS;
             document.getElementById('editItemDescription').value = item.DESCRIPTION;
 
@@ -312,7 +326,6 @@
                 description: document.getElementById('editItemDescription').value,
                 price: parseFloat(document.getElementById('editItemPrice').value),
                 category: document.getElementById('editItemCategory').value,
-                image_link: document.getElementById('editItemImageLink').value,
                 availability_status: document.getElementById('editItemAvailability').value
             };
 

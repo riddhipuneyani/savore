@@ -94,8 +94,7 @@ CREATE TABLE deliveries (
     delivery_person_id VARCHAR(5),
     delivery_status VARCHAR(20) CHECK (delivery_status IN ('Out for Delivery', 'Delivered', 'Cancelled')),
     delivery_time TIMESTAMP,
-    PRIMARY KEY (delivery_id, order_id),
-    FOREIGN KEY (delivery_id) REFERENCES delivery(delivery_id),
+    PRIMARY KEY (delivery_id),
     FOREIGN KEY (order_id) REFERENCES orders(order_id),
     FOREIGN KEY (delivery_person_id) REFERENCES delivery(delivery_id)
 );
