@@ -141,3 +141,20 @@ h1 {
 .delivery-card button:hover {
     background-color: #e0a800;
 }
+
+.payment-info {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.payment-info p {
+    margin: 5px 0;
+    color: #495057;
+}
+
+.payment-info p:first-child {
+    font-weight: bold;
+    color: #212529;
+}

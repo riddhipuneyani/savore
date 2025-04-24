@@ -1068,10 +1068,12 @@ app.get('/api/delivery/orders', authenticateToken, async (req, res) => {
         const result = await conn.execute(
             `SELECT o.order_id, o.customer_id, o.order_date, o.order_status, o.total_price,
                     c.name as customer_name, c.phone_number as customer_phone, c.address as delivery_address,
-                    d.delivery_status
+                    d.delivery_status,
+                    p.payment_method, p.payment_status, p.amount
              FROM orders o
              JOIN customer c ON o.customer_id = c.customer_id
              JOIN deliveries d ON o.order_id = d.order_id
+             LEFT JOIN payment p ON o.order_id = p.order_id
              WHERE d.delivery_person_id = :deliveryId
              ORDER BY o.order_date DESC`,
             [req.user.delivery_id]
@@ -1090,7 +1092,10 @@ app.get('/api/delivery/orders', authenticateToken, async (req, res) => {
             customerName: row[5],
             customerPhone: row[6],
             deliveryAddress: row[7],
-            deliveryStatus: row[8]
+            deliveryStatus: row[8],
+            paymentMethod: row[9] || 'Not specified',
+            paymentStatus: row[10] || 'Pending',
+            paymentAmount: row[11] || row[4] // Use total price if payment amount is null
         }));
 
         res.json(orders);
@@ -1132,11 +1137,11 @@ app.put('/api/delivery/orders/:orderId/status', authenticateToken, async (req, r
             return res.status(404).json({ error: 'Order not found or unauthorized' });
         }
 
-        // Update the delivery status
+        // Update the delivery status and set delivery_time to current timestamp
         const result = await conn.execute(
             `UPDATE deliveries 
              SET delivery_status = :status,
-                 delivery_time = SYSDATE
+                 delivery_time = CURRENT_TIMESTAMP
              WHERE order_id = :orderId 
              AND delivery_person_id = :deliveryId`,
             [status, orderId, deliveryId]
