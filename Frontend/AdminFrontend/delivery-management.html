@@ -183,31 +183,40 @@
                 const orders = await ordersResponse.json();
                 const deliveryPersons = await deliveryPersonsResponse.json();
                 
-                const ordersHtml = orders.map(order => `
-                    <div class="card order-card mb-3" data-order-id="${order.ORDER_ID}">
-                        <div class="card-body">
-                            <h6 class="card-title">Order #${order.ORDER_ID}</h6>
-                            <p class="card-text">
-                                <strong>Customer:</strong> ${order.CUSTOMER_NAME}<br>
-                                <strong>Address:</strong> ${order.ADDRESS}<br>
-                                <strong>Total:</strong> ₹${order.TOTAL_PRICE}<br>
-                                <strong>Date:</strong> ${new Date(order.ORDER_DATE).toLocaleString()}
-                            </p>
-                            <div class="form-group">
-                                <label for="deliveryPerson_${order.ORDER_ID}">Assign Delivery Person:</label>
-                                <select class="form-control delivery-person-select" id="deliveryPerson_${order.ORDER_ID}">
-                                    <option value="">Select Delivery Person</option>
-                                    ${deliveryPersons.map(person => `
-                                        <option value="${person.EMPLOYEE_ID}">${person.NAME}</option>
-                                    `).join('')}
-                                </select>
-                            </div>
-                            <button class="btn btn-primary btn-sm mt-2 assign-btn" data-order-id="${order.ORDER_ID}">
-                                Assign
-                            </button>
+                let ordersHtml;
+                if (orders.length === 0) {
+                    ordersHtml = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No unassigned orders at the moment.
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                } else {
+                    ordersHtml = orders.map(order => `
+                        <div class="card order-card mb-3" data-order-id="${order.ORDER_ID}">
+                            <div class="card-body">
+                                <h6 class="card-title">Order #${order.ORDER_ID}</h6>
+                                <p class="card-text">
+                                    <strong>Customer:</strong> ${order.CUSTOMER_NAME}<br>
+                                    <strong>Address:</strong> ${order.ADDRESS}<br>
+                                    <strong>Total:</strong> ₹${order.TOTAL_PRICE}<br>
+                                    <strong>Date:</strong> ${new Date(order.ORDER_DATE).toLocaleString()}
+                                </p>
+                                <div class="form-group">
+                                    <label for="deliveryPerson_${order.ORDER_ID}">Assign Delivery Person:</label>
+                                    <select class="form-control delivery-person-select" id="deliveryPerson_${order.ORDER_ID}">
+                                        <option value="">Select Delivery Person</option>
+                                        ${deliveryPersons.map(person => `
+                                            <option value="${person.EMPLOYEE_ID}">${person.NAME}</option>
+                                        `).join('')}
+                                    </select>
+                                </div>
+                                <button class="btn btn-primary btn-sm mt-2 assign-btn" data-order-id="${order.ORDER_ID}">
+                                    Assign
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
                 
                 document.getElementById('unassignedOrders').innerHTML = ordersHtml;
                 
@@ -228,6 +237,11 @@
                 });
             } catch (error) {
                 console.error('Error loading unassigned orders:', error);
+                document.getElementById('unassignedOrders').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> Error loading unassigned orders. Please try again.
+                    </div>
+                `;
             }
         }
 
@@ -242,24 +256,38 @@
                 });
                 const deliveries = await response.json();
                 
-                const deliveriesHtml = deliveries.map(delivery => `
-                    <div class="card mb-2">
-                        <div class="card-body">
-                            <h6 class="card-title">Delivery #${delivery.DELIVERY_ID}</h6>
-                            <p class="card-text">
-                                <strong>Order:</strong> #${delivery.ORDER_ID}<br>
-                                <strong>Customer:</strong> ${delivery.CUSTOMER_NAME}<br>
-                                <strong>Delivery Person:</strong> ${delivery.DELIVERY_PERSON_NAME}<br>
-                                <strong>Status:</strong> ${delivery.DELIVERY_STATUS}<br>
-                                <strong>Time:</strong> ${new Date(delivery.DELIVERY_TIME).toLocaleString()}
-                            </p>
+                let deliveriesHtml;
+                if (deliveries.length === 0) {
+                    deliveriesHtml = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No active deliveries at the moment.
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                } else {
+                    deliveriesHtml = deliveries.map(delivery => `
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6 class="card-title">Delivery #${delivery.DELIVERY_ID}</h6>
+                                <p class="card-text">
+                                    <strong>Order:</strong> #${delivery.ORDER_ID}<br>
+                                    <strong>Customer:</strong> ${delivery.CUSTOMER_NAME}<br>
+                                    <strong>Delivery Person:</strong> ${delivery.DELIVERY_PERSON_NAME}<br>
+                                    <strong>Status:</strong> ${delivery.DELIVERY_STATUS}<br>
+                                    <strong>Time:</strong> ${new Date(delivery.DELIVERY_TIME).toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+                    `).join('');
+                }
                 
                 document.getElementById('activeDeliveries').innerHTML = deliveriesHtml;
             } catch (error) {
                 console.error('Error loading active deliveries:', error);
+                document.getElementById('activeDeliveries').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> Error loading active deliveries. Please try again.
+                    </div>
+                `;
             }
         }
 
